@@ -7,6 +7,35 @@
 <body>
 <canvas id="canvas"></canvas>
 <script>
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+    var gun = {
+        x: 100,
+        y: height,
+        angle: -Math.PI/4
+    };
+
+    window.addEventListener("mousedown",onMouseDown);
+    function aimGun(x, y) {
+        context.clearRect(0,0,width,height);
+        context.arc()
+    }
+    function onMouseDown(event) {
+        window.addEventListener("mousemove",onMouseMove);
+        window.addEventListener("mouseup",onMouseUp);
+        aimGun(event.clientX, event.clientY);
+    }
+    function onMouseMove(event) {
+        aimGun(event.clientX, event.clientY);
+    }
+    function onMouseUp(event) {
+        window.removeEventListener("mousemove",onMouseMove);
+        window.removeEventListener("mouseup",onMouseUp);
+        aimGun(event.clientX, event.clientY);
+
+    }
 </script>
 </body>
 </html>
