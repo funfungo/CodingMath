@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Spring</title>
+    <script src="../js/vector.js"></script>
+    <script src="../js/util.js"></script>
+    <script src="../js/particle.js"></script>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+
+    var springPoint = vector.create(width/2, height/2);
+    var weight = particle.create(Math.random()*width, Math.random()*height, 0, 0);
+    weight.radius = 20;
+    weight.friction = 0.9;
+    var k = 0.1;
+    update();
+
+    document.addEventListener("mousemove",function (event) {
+        springPoint.setX(event.clientX);
+        springPoint.setY(event.clientY);
+    });
+
+    function update() {
+        context.clearRect(0,0, width,height);
+
+        weight.update();
+        var distance = springPoint.subtract(weight.position);
+        var springForce = distance.multiply(k);
+
+        weight.velocity.addTo(springForce);
+
+        context.beginPath();
+        context.arc(weight.position.getX(),weight.position.getY(), weight.radius, 0, Math.PI * 2, false);
+        context.fill();
+
+        context.beginPath();
+        context.arc(springPoint.getX(),springPoint.getY(), 4, 0, Math.PI * 2, false);
+        context.fill();
+
+        context.beginPath();
+        context.moveTo(springPoint.getX(),springPoint.getY());
+        context.lineTo(weight.position.getX(), weight.position.getY());
+        context.stroke();
+
+        requestAnimationFrame(update);
+    }
+</script>
+</body>
+</html>
