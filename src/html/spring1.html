@@ -16,10 +16,11 @@
     var height = canvas.height = window.innerHeight;
 
     var springPoint = vector.create(width/2, height/2);
-    var weight = particle.create(Math.random()*width, Math.random()*height, 0, 0);
+    var weight = particle.create(Math.random()*width, Math.random()*height, 50, Math.random() * Math.PI * 2, 0.5);
     weight.radius = 20;
     weight.friction = 0.9;
     var k = 0.1;
+    var springLength = 100;
     update();
 
     document.addEventListener("mousemove",function (event) {
@@ -32,6 +33,7 @@
 
         weight.update();
         var distance = springPoint.subtract(weight.position);
+        distance.setLength(distance.getLength() - springLength);
         var springForce = distance.multiply(k);
 
         weight.velocity.addTo(springForce);
