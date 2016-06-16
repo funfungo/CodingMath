@@ -24,5 +24,18 @@ var util = {
     },
     randomInt: function (min, max) {
         return Math.floor(min + Math.random() * (max - min + 1));
+    },
+    degreesToRads: function (degrees) {
+        return degress / 180 * Math.PI
+    },
+    radsToDegrees: function (radians) {
+        return radians * 180 / Math.PI;
+    },
+    roundToPlaces: function (value, places) {
+        var mult = Math.pow(10, places);
+        return Math.round(value * mult) / mult;
+    },
+    roundNearest: function (value, nearest) {
+        return Math.round(value / nearest) * nearest;
     }
 };
