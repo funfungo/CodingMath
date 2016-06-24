@@ -1,0 +1,100 @@
+<html>
+<head>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+    context.font="12px Georgia ";
+
+    var cubes = [];
+    var circles = [];
+    var dots = [];
+    var cubeSize = 10;
+    var column = Math.floor(width / cubeSize);
+    var row = Math.floor(height / cubeSize);
+
+    function Cube(lt,rt,lb,rb) {
+        this.leftTop = lt;
+        this.rightTop = rt;
+        this.leftBottom = lb;
+        this.rightBottom = rb;
+    }
+
+    function Dot(x, y) {
+        this.x = x;
+        this.y = y;
+        this.potential = 0;
+    }
+
+    function Circle() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.r = 20 + Math.random() * 20;
+        this.vx = -2 + Math.random() * 4;
+        this.vy = -2 + Math.random() * 4;
+    }
+    Circle.prototype.update = function () {
+        if (this.x + this.r > width || this.x - this.r < 0) {
+            this.vx = -this.vx;
+        } else if (this.y + this.r > height || this.y - this.r < 0) {
+            this.vy = -this.vy;
+        }
+        this.x += this.vx;
+        this.y += this.vy;
+    };
+    function calmPotential(x, y) {
+        var potential = 0;
+        for (var i = 0; i < circles.length; i++) {
+            var circle = circles[i];
+            potential += (circle.r * circle.r) / (x - circle.x) * (x - circle.x) + (y - circle.y) * (y - circle.y);
+        }
+        return potential;
+    }
+
+    for (var i = 0; i < 3; i++) {
+        circles.push(new Circle());
+    }
+
+    //点阵,从上到下,从左到右
+    for(var i = 0; i < width; i += cubeSize){
+        for(var j = 0 ; j < height; j += cubeSize){
+            dots.push(new Dot(i,j));
+        }
+    }
+
+
+
+    for (var i = 1; i <= column; i++) {
+        for (var j = 1; j <= row; j++) {
+            var lt = dots[(i-1)*row+j-1];
+            var rt = dots[i*row+j-1];
+            var lb = dots[(i-1)*row+j];
+            var rb = dots[i*row+j];
+            cubes.push(lt,rt,lb,rb);
+        }
+    }
+
+    context.clearRect(0, 0, width, height);
+    for(var i = 0; i < cubes.length; i++){
+
+    }
+</script>
+</body>
+</html>
