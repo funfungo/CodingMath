@@ -26,10 +26,24 @@
     var cubes = [];
     var circles = [];
     var dots = [];
-    var cubeSize = 20;
+    var cubeSize = 10;
     var column = Math.floor(width / cubeSize);
     var row = Math.floor(height / cubeSize);
     var cubeTypes = [];
+    var threshold = 0.8;
+
+    function lerp(norm, min, max) {
+        return min + norm * (max - min);
+    }
+
+    function map(value,sourceMin, sourceMax, destMin, destMax) {
+        return lerp(norm(value, sourceMin, sourceMax), destMin, destMax);
+    }
+
+    function potentialPos(dotA, dotB, posDir) {
+        return dotA[posDir] + (dotB[posDir] - dotA[posDir]) * Math.abs((threshold-dotA.potential)/(dotB.potential - dotA.potential))
+    }
+
 
     function Cube(lt, rt, lb, rb) {
         this.lt = lt;
@@ -37,96 +51,117 @@
         this.lb = lb;
         this.rb = rb;
         this.typeArr = [];
-        if (this.lt.potential > 1) {
+    }
+
+    Cube.prototype.potentialMap = function (direction) {
+        switch (direction){
+            case "north":
+                return potentialPos(this.lt, this.rt, "x");
+                break;
+            case "south":
+                return potentialPos(this.lb, this.rb, "x");
+                break;
+            case "west":
+                return potentialPos(this.lt, this.lb, "y");
+                break;
+            case "east":
+                return potentialPos(this.rt, this.rb, "y");
+        }
+    };
+    Cube.prototype.update = function () {
+        this.typeArr = [];
+        if (this.lt.potential > threshold) {
             this.typeArr.push(1);
         } else {
             this.typeArr.push(0);
         }
-        if (this.rt.potential > 1) {
+        if (this.rt.potential > threshold) {
             this.typeArr.push(1);
         } else {
             this.typeArr.push(0);
         }
-        if (this.rb.potential > 1) {
+        if (this.rb.potential > threshold) {
             this.typeArr.push(1);
         } else {
             this.typeArr.push(0);
         }
-        if (this.lb.potential > 1) {
+        if (this.lb.potential > threshold) {
             this.typeArr.push(1);
         } else {
             this.typeArr.push(0);
         }
         this.type = parseInt(this.typeArr.join(''), 2);
-    }
+    };
+
     Cube.prototype.draw = function () {
+        context.strokeStyle = "#ff0000";
         context.beginPath();
         switch (this.type) {
             case 0:
                 break;
             case 1:
-                context.moveTo(this.lt.x, (this.lb.y + this.lt.y) / 2);
-                context.lineTo((this.rb.x + this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 2:
-                context.moveTo(this.rt.x, (this.rb.y + this.rt.y) / 2);
-                context.lineTo((this.rb.x + this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.rt.x, this.potentialMap("east"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 3:
-                context.moveTo(this.lt.x, (this.lb.y + this.lt.y) / 2);
-                context.lineTo(this.rt.x, (this.rb.y + this.rt.y) / 2);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.rt.x, this.potentialMap("east"));
                 break;
             case 4:
-                context.moveTo((this.rt.x + this.lt.x) / 2, this.rt.y);
-                context.lineTo(this.rt.x, (this.rb.y + this.rt.y) / 2);
+                context.moveTo(this.potentialMap("north"), this.rt.y);
+                context.lineTo(this.rt.x, this.potentialMap("east"));
                 break;
             case 5:
-                context.moveTo(this.lt.x, (this.lb.y + this.lt.y) / 2);
-                context.lineTo((this.rt.x + this.lt.x) / 2, this.rt.y);
-                context.moveTo(this.rt.x, (this.rb.y + this.rt.y) / 2);
-                context.lineTo((this.rb.x + this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("north"), this.rt.y);
+                context.moveTo(this.rt.x, this.potentialMap("east"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 6:
-                context.moveTo((this.rt.x + this.lt.x) / 2, this.rt.y);
-                context.lineTo((this.rb.x + this.lb.x) / 2, this.rb.y);
+                context.moveTo(this.potentialMap("north"), this.rt.y);
+                context.lineTo(this.potentialMap("south"), this.rb.y);
                 break;
             case 7:
-                context.moveTo(this.lt.x, (this.lb.y + this.lt.y) / 2);
-                context.lineTo((this.rt.x + this.lt.x) / 2, this.rt.y);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("north"), this.rt.y);
                 break;
             case 8:
-                context.moveTo(this.lt.x, (this.lb.y + this.lt.y) / 2);
-                context.lineTo((this.rt.x + this.lt.x) / 2, this.rt.y);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("north"), this.rt.y);
                 break;
             case 9:
-                context.moveTo((this.rt.x - this.lt.x) / 2, this.rt.y);
-                context.lineTo((this.rb.x - this.lb.x) / 2, this.rb.y);
+                context.moveTo(this.potentialMap("north"), this.rt.y);
+                context.lineTo(this.potentialMap("south"), this.rb.y);
                 break;
             case 10:
-                context.moveTo((this.rt.x - this.lt.x) / 2, this.rt.y);
-                context.lineTo(this.rt.x, (this.rb.y - this.rt.y) / 2);
-                context.moveTo(this.lt.x, (this.lb.y - this.lt.y) / 2);
-                context.lineTo((this.rb.x - this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.potentialMap("north"), this.rt.y);
+                context.lineTo(this.rt.x, this.potentialMap("east"));
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 11:
-                context.moveTo((this.rt.x - this.lt.x) / 2, this.rt.y);
-                context.lineTo(this.rt.x, (this.rb.y - this.rt.y) / 2);
+                context.moveTo(this.potentialMap("north"), this.rt.y);
+                context.lineTo(this.rt.x, this.potentialMap("east"));
                 break;
             case 12:
-                context.moveTo(this.lt.x, (this.lb.y - this.lt.y) / 2);
-                context.lineTo(this.rt.x, (this.rb.y - this.rt.y) / 2);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.rt.x, this.potentialMap("east"));
                 break;
             case 13:
-                context.moveTo(this.rt.x, (this.rb.y - this.rt.y) / 2);
-                context.lineTo((this.rb.x - this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.rt.x, this.potentialMap("east"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 14:
-                context.moveTo(this.lt.x, (this.lb.y - this.lt.y) / 2);
-                context.lineTo((this.rb.x - this.lb.x) / 2, this.lb.y);
+                context.moveTo(this.lt.x, this.potentialMap("west"));
+                context.lineTo(this.potentialMap("south"), this.lb.y);
                 break;
             case 15:
                 break;
-            break;
+                break;
         }
         context.stroke();
     };
@@ -150,8 +185,8 @@
         this.x = Math.random() * width;
         this.y = Math.random() * height;
         this.r = 20 + Math.random() * 20;
-        this.vx = -2 + Math.random() * 4;
-        this.vy = -2 + Math.random() * 4;
+        this.vx = -1 + Math.random() * 2;
+        this.vy = -1 + Math.random() * 2;
     }
     Circle.prototype.update = function () {
         if (this.x + this.r > width || this.x - this.r < 0) {
@@ -171,7 +206,7 @@
         return potential;
     }
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 10; i++) {
         circles.push(new Circle());
     }
 
@@ -199,8 +234,6 @@
 
             } catch (e) {
             }
-            cube.draw();
-
         }
     }
 
@@ -211,6 +244,30 @@
         context.arc(circles[i].x, circles[i].y, circles[i].r, 0, Math.PI * 2);
         context.stroke();
     }
+
+    function loop() {
+        context.clearRect(0,0,width,height);
+        for (var i = 0; i < circles.length; i++){
+            circles[i].update();
+            context.strokeStyle = "#ffffff";
+//            context.beginPath();
+//            context.arc(circles[i].x, circles[i].y, circles[i].r, 0, Math.PI * 2);
+//            context.stroke();
+        }
+        for (var i = 0; i < dots.length; i++) {
+            var dotCol = dots[i];
+            for (var j = 0; j < dotCol.length; j ++) {
+                dotCol[j].update();
+            }
+        }
+        for (var i = 0; i < cubes.length; i++) {
+            cubes[i].update();
+            cubes[i].draw();
+        }
+        window.requestAnimationFrame(loop);
+    }
+
+    loop();
 </script>
 </body>
 </html>
