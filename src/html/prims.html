@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+
+    var particles = [];
+    var unreached = [];
+    var reached = [];
+    var minLength = 1000;
+    var Particle = function (x, y) {
+        this.x = x;
+        this.y = y;
+    };
+
+    function distance(partA, partB) {
+        return Math.sqrt((partA.x - partB.x) * (partA.x - partB.x) + (partA.y - partB.y) * (partA.y - partB.y));
+    }
+
+    function update() {
+        for (var i = 0; i < particles.length; i++) {
+            unreached.push(particles[i]);
+        }
+
+        reached.push(unreached[0]);
+        unreached.slice(0, 1);
+
+        for (var i = 0; i < reached.length; i++) {
+            for (var j = 0; j < reached.length; j++) {
+                var dist = distance(reached[i],unreached[j]);
+                if (dist < minLength) {
+                    minLength = dist;
+                }
+            }
+        }
+
+        requestAnimationFrame(update);
+    }
+
+    document.addEventListener("click", function (e) {
+        var x = e.clientX;
+        var y = e.clientY;
+
+        var particle = new Particle(x, y);
+
+        particles.push(particle);
+    });
+
+
+</script>
+</body>
+</html>

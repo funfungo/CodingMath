@@ -32,14 +32,6 @@
     var cubeTypes = [];
     var threshold = 0.8;
 
-    function lerp(norm, min, max) {
-        return min + norm * (max - min);
-    }
-
-    function map(value,sourceMin, sourceMax, destMin, destMax) {
-        return lerp(norm(value, sourceMin, sourceMax), destMin, destMax);
-    }
-
     function potentialPos(dotA, dotB, posDir) {
         return dotA[posDir] + (dotB[posDir] - dotA[posDir]) * Math.abs((threshold-dotA.potential)/(dotB.potential - dotA.potential))
     }
