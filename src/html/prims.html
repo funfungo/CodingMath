@@ -30,12 +30,14 @@
     var height = canvas.height = window.innerHeight;
 
     var particles = [];
-    var unreached = [];
-    var reached = [];
-    var minLength = 1000;
     var Particle = function (x, y) {
         this.x = x;
         this.y = y;
+    };
+    Particle.prototype.draw = function () {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 10, 0, Math.PI * 2);
+        ctx.fill();
     };
 
     function distance(partA, partB) {
@@ -43,34 +45,61 @@
     }
 
     function update() {
+        ctx.clearRect(0, 0, width, height);
+        var unreached = [];
+        var reached = [];
+
         for (var i = 0; i < particles.length; i++) {
+            particles[i].draw();
             unreached.push(particles[i]);
         }
 
-        reached.push(unreached[0]);
-        unreached.slice(0, 1);
+        var rd = Math.floor(Math.random()*unreached.length);
+        reached.push(unreached[rd]);
+        unreached.splice(rd, 1);
 
-        for (var i = 0; i < reached.length; i++) {
-            for (var j = 0; j < reached.length; j++) {
-                var dist = distance(reached[i],unreached[j]);
-                if (dist < minLength) {
-                    minLength = dist;
+        while (unreached.length > 0) {
+
+            var record = 1000;
+            var jIdx, iIdx;
+
+            for (var i = 0; i < reached.length; i++) {
+                for (var j = 0; j < unreached.length; j++) {
+                    var dist = distance(reached[i], unreached[j]);
+                    if (dist < record) {
+                        record = dist;
+                        jIdx = j;
+                        iIdx = i;
+                    }
                 }
             }
+
+            ctx.beginPath();
+            ctx.moveTo(reached[iIdx].x, reached[iIdx].y);
+            ctx.lineTo(unreached[jIdx].x, unreached[jIdx].y);
+            ctx.stroke();
+
+            reached.push(unreached[jIdx]);
+            unreached.splice(jIdx, 1);
         }
 
-        requestAnimationFrame(update);
-    }
+        }
 
-    document.addEventListener("click", function (e) {
-        var x = e.clientX;
-        var y = e.clientY;
 
-        var particle = new Particle(x, y);
+//        requestAnimationFrame(update);
 
-        particles.push(particle);
-    });
 
+        document.addEventListener("click", function (e) {
+            var x = e.clientX;
+            var y = e.clientY;
+
+            var particle = new Particle(x, y);
+
+            particles.push(particle);
+            particle.draw();
+
+            update();
+        });
 
 </script>
 </body>
