@@ -1,0 +1,71 @@
+*{
+    margin: 0;
+    padding: 0;
+}
+html,body{
+    height: 100%;
+    overflow: hidden;
+}
+body{
+    background-color: #6699A1;
+}
+.page{
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+.page__control{
+    position: absolute;
+    left: 50px;
+    bottom: 50px;
+}
+.page2__canvas{
+    width: 800px;
+    height: 600px;
+    margin: 0 auto;
+    padding-top: 100px;
+}
+.img__metaball-wrap{
+    margin: 0 auto;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    img{
+        position: absolute;
+        left: 0;
+        top: -100px;
+        width: 100%;
+    }
+}
+.formula{
+    font-size: 24px;
+    position: absolute;
+    top: 600px;
+    left: 50px;
+    color: #ffffff;
+    text-align: center;
+}
+.control{
+    right: 50px;
+    bottom: 50px;
+    position: absolute;
+    overflow: hidden;
+}
+.page__control-show,.page__control-item,.control__item{
+    display: inline-block;
+    padding: 10px 20px;
+    color: #ffffff;
+    text-decoration: none;
+    border: 1px solid #ffffff;
+    border-right: none;
+    float: left;
+    &:active{
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    &:last-child{
+        border-right: 1px solid #ffffff;
+    }
+}
+.current{
+    background-color: rgba(0, 0, 0, 0.2);
+}
