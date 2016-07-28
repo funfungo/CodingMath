@@ -5,7 +5,7 @@
     <title>Spring</title>
     <script src="../js/vector3.js"></script>
     <script src="../js/util.js"></script>
-    <script src="../js/particle.js"></script>
+    <!--<script src="../js/particle.js"></script>-->
     <style>
         *{
             margin: 0;
@@ -14,7 +14,7 @@
         body{
             width: 100%;
             height: 100%;
-
+            background: #000;
         }
     </style>
 </head>
@@ -25,25 +25,31 @@
     var context = canvas.getContext("2d");
     var width = canvas.width = window.innerWidth;
     var height = canvas.height = window.innerHeight;
+    context.fillStyle = "#fff";
 
-    var sphereRad = 250;
+    var sphereRad = 150;
+    var fLen = 500;
+
+
+    var particles = [];
+    var turnSpeed = 0.01;
 
     var Particle = function () {
         this.distPos = {
             theta: Math.random() * 2 * Math.PI - Math.PI,
             phi: Math.random() * Math.PI - Math.PI/2
         };
-
+        this.turnAngle = 0;
         this.init();
     };
 
     Particle.prototype.init = function () {
-        var x = sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
-        var z = sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
-        var y = sphereRad * Math.sin(this.distPos.phi);
+        this.x = sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
+        this.z = sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
+        this.y = sphereRad * Math.sin(this.distPos.phi);
 
-        this.distVec = new Vector(x,y,z);
-
+        this.distVec = new Vector(this.x,this.y,this.z);
+        this.m = fLen / (fLen - this.z);
 //        this.angle = {
 //            theta: this.distPos.theta * 180 / Math.PI,
 //            phi: this.distPos.phi * 180 / Math.PI
@@ -51,10 +57,33 @@
 
     };
 
-    for(var i=0; i< 100; i++){
+    Particle.prototype.update = function () {
+        this.turnAngle += turnSpeed % (2*Math.PI);
+        var cosAngle = Math.cos(this.turnAngle);
+        var sinAngle = Math.sin(this.turnAngle);
+        this.x = cosAngle * this.distVec.x + sinAngle*this.distVec.z;
+        this.z =  -sinAngle*this.distVec.x + cosAngle*this.distVec.z;
+        this.m = fLen / (fLen - this.z);
+    };
+
+    for(var i=0; i< 150; i++){
         var p = new Particle();
-        context.arc(p.distVec.x, p.distVec.y, 10, 0, Math.PI * 2);
+        particles.push(p);
     }
+
+    function loop() {
+        context.clearRect(0,0,width,height);
+        for(var i=0; i< 150; i++){
+            var p = particles[i];
+            p.update();
+            context.beginPath();
+            context.arc(p.x + width/2, height/2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
+//            context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2.5 * p.m, 0, Math.PI * 2);
+            context.fill();
+        }
+        requestAnimationFrame(loop);
+    }
+    loop();
 </script>
 </body>
 </html>
