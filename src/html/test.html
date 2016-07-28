@@ -7,14 +7,16 @@
     <script src="../js/util.js"></script>
     <!--<script src="../js/particle.js"></script>-->
     <style>
-        *{
+        * {
             margin: 0;
             padding: 0;
         }
-        body{
+
+        body {
             width: 100%;
             height: 100%;
             background: #000;
+            overflow: hidden;
         }
     </style>
 </head>
@@ -27,28 +29,45 @@
     var height = canvas.height = window.innerHeight;
     context.fillStyle = "#fff";
 
-    var sphereRad = 150;
-    var fLen = 500;
+    var sphereRad = 130;
+    var fLen = 300;
 
 
     var particles = [];
+    var sphereObject = [];
     var turnSpeed = 0.01;
 
     var Particle = function () {
         this.distPos = {
             theta: Math.random() * 2 * Math.PI - Math.PI,
-            phi: Math.random() * Math.PI - Math.PI/2
+            phi: Math.random() * Math.PI - Math.PI / 2
         };
+
+        this.startPos = {
+            x: sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta) + Math.random() * sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta),
+            z: sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta) + Math.random() * sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta),
+            y: sphereRad * sphereRad * Math.sin(this.distPos.phi) + Math.random() * sphereRad * Math.sin(this.distPos.phi)
+
+        };
+
+        this.proj = {};
         this.turnAngle = 0;
         this.init();
     };
 
     Particle.prototype.init = function () {
-        this.x = sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
-        this.z = sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
-        this.y = sphereRad * Math.sin(this.distPos.phi);
+        this.distPos.x = sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
+        this.distPos.z = sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
+        this.distPos.y = sphereRad * Math.sin(this.distPos.phi);
+        this.distVec = new Vector(this.distPos.x, this.distPos.y, this.distPos.z);
 
-        this.distVec = new Vector(this.x,this.y,this.z);
+
+        this.x = sphereRad * (1.2 + Math.random()) * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
+        this.y = sphereRad * (1.2 + Math.random()) * Math.sin(this.distPos.phi);
+        this.z = sphereRad * (1.2 + Math.random()) * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
+        this.nowPos = new Vector(this.x, this.y, this.z);
+
+        this.velo = this.distVec.negative().multiply(0.005 + Math.random() * 0.005);
         this.m = fLen / (fLen - this.z);
 //        this.angle = {
 //            theta: this.distPos.theta * 180 / Math.PI,
@@ -58,27 +77,42 @@
     };
 
     Particle.prototype.update = function () {
-        this.turnAngle += turnSpeed % (2*Math.PI);
-        var cosAngle = Math.cos(this.turnAngle);
-        var sinAngle = Math.sin(this.turnAngle);
-        this.x = cosAngle * this.distVec.x + sinAngle*this.distVec.z;
-        this.z =  -sinAngle*this.distVec.x + cosAngle*this.distVec.z;
+        this.nowPos = new Vector(this.x, this.y, this.z);
+        if (this.nowPos.length() > sphereRad) {
+            this.x = this.x + this.velo.x;
+            this.y = this.y + this.velo.y;
+            this.z = this.z + this.velo.z;
+        } else {
+            this.turnAngle += turnSpeed % (2 * Math.PI);
+            var cosAngle = Math.cos(turnSpeed);
+            var sinAngle = Math.sin(turnSpeed);
+            this.x = cosAngle * this.x + sinAngle * this.z;
+            this.z = -sinAngle * this.x + cosAngle * this.z;
+            this.y = this.distPos.y;
+
+        }
+
+//        this.proj.x = cosAngle * this.x + sinAngle*this.z;
+//        this.proj.z =  -sinAngle*this.x + cosAngle*this.z;
+//        this.proj.y = this.distPos.y;
         this.m = fLen / (fLen - this.z);
     };
 
-    for(var i=0; i< 150; i++){
+    for (var i = 0; i < 250; i++) {
         var p = new Particle();
         particles.push(p);
     }
 
     function loop() {
-        context.clearRect(0,0,width,height);
-        for(var i=0; i< 150; i++){
+        context.clearRect(0, 0, width, height);
+        for (var i = 0; i < 250; i++) {
             var p = particles[i];
             p.update();
+            var alpha = util.map(p.z, -sphereRad, sphereRad, 0.3, 1);
+            context.fillStyle = "rgba(70,255,140," + alpha + ")";
             context.beginPath();
-            context.arc(p.x + width/2, height/2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
-//            context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2.5 * p.m, 0, Math.PI * 2);
+//            context.arc(p.x + width / 2, height / 2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
+            context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2 * p.m, 0, Math.PI * 2);
             context.fill();
         }
         requestAnimationFrame(loop);
