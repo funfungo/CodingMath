@@ -50,9 +50,13 @@ Vector.prototype = {
         return Math.max(Math.max(this.x, this.y), this.z);
     },
     toAngles: function() {
+        var phi = Math.atan2(this.y , this.x);
+        if(phi<0){
+            phi = phi + Math.PI * 2;
+        }
         return {
-            theta: Math.atan2(this.z, this.x),
-            phi: Math.asin(this.y / this.length())
+            theta: Math.acos(this.z/this.length()),
+            phi: phi
         };
     },
     angleTo: function(a) {

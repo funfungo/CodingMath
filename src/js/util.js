@@ -9,7 +9,7 @@ var util = {
         return min + norm * (max - min);
     },
     map: function (value, sourceMin, sourceMax, destMin, destMax) {
-        return lerp(norm(value, sourceMin, sourceMax), destMin, destMax);
+        return this.lerp(this.norm(value, sourceMin, sourceMax), destMin, destMax);
     },
     clamp: function (value, min, max) {
         return Math.min(Math.max(value, min), max);

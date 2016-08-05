@@ -39,15 +39,14 @@
 
     var Particle = function () {
         this.distPos = {
-            theta: Math.random() * 2 * Math.PI - Math.PI,
-            phi: Math.random() * Math.PI - Math.PI / 2
+            theta: Math.random() * Math.PI,
+            phi: 2 * Math.random() * Math.PI
         };
 
         this.startPos = {
             x: sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta) + Math.random() * sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta),
             z: sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta) + Math.random() * sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta),
             y: sphereRad * sphereRad * Math.sin(this.distPos.phi) + Math.random() * sphereRad * Math.sin(this.distPos.phi)
-
         };
 
         this.proj = {};
@@ -56,9 +55,9 @@
     };
 
     Particle.prototype.init = function () {
-        this.distPos.x = sphereRad * Math.cos(this.distPos.phi) * Math.cos(this.distPos.theta);
-        this.distPos.z = sphereRad * Math.cos(this.distPos.phi) * Math.sin(this.distPos.theta);
-        this.distPos.y = sphereRad * Math.sin(this.distPos.phi);
+        this.distPos.x = sphereRad * Math.sin(this.distPos.theta) * Math.cos(this.distPos.phi);
+        this.distPos.y = sphereRad * Math.sin(this.distPos.theta) * Math.sin(this.distPos.phi);
+        this.distPos.z = sphereRad * Math.cos(this.distPos.theta);
         this.distVec = new Vector(this.distPos.x, this.distPos.y, this.distPos.z);
 
 
@@ -83,6 +82,9 @@
             this.y = this.y + this.velo.y;
             this.z = this.z + this.velo.z;
         } else {
+            this.x = this.distPos.x;
+            this.y = this.distPos.y;
+            this.z = this.distPos.z;
             this.turnAngle += turnSpeed % (2 * Math.PI);
             var cosAngle = Math.cos(turnSpeed);
             var sinAngle = Math.sin(turnSpeed);
@@ -97,6 +99,8 @@
 //        this.proj.y = this.distPos.y;
         this.m = fLen / (fLen - this.z);
     };
+
+//    var p = new Particle();
 
     for (var i = 0; i < 250; i++) {
         var p = new Particle();
