@@ -16,7 +16,7 @@
         body {
             width: 100%;
             height: 100%;
-            background: #000;
+            background: #212020;
             overflow: hidden;
         }
     </style>
@@ -30,21 +30,28 @@
     var context = canvas.getContext("2d");
     var width = canvas.width = window.innerWidth;
     var height = canvas.height = window.innerHeight;
-    context.fillStyle = "#fff";
+    var CenterX = width / 2;
+    var CenterY = height / 2;
+
+
+    var dotImageList = [];
+    for(var i = 1; i <= 4; i++){
+        var dotImage = new Image();
+        dotImage.src = "../img/gatherround/dot" + i + ".png";
+        dotImageList.push(dotImage);
+    }
 
     var sphereRad = 130;
     var fLen = 300;
-
     var maxParticle = 400;
-    var particles = [];
-    var sphereObject = [];
     var turnSpeed = 0.005;
+    var particles = [];
 
     var Particle = function (add) {
         var theta;
-        if(add === true){
+        if (add === true) {
             theta = Math.PI / 2;
-        }else {
+        } else {
             theta = Math.random() * Math.PI;
         }
         this.distPos = {
@@ -58,81 +65,114 @@
         this.distVec = new Vector(this.distPos.x, this.distPos.y, this.distPos.z);
         this.unitVec = this.distVec.unit();
 
-        var startMult = 1+Math.random()*1;
-        this.startVec =this.distVec.multiply(startMult);
+        var startMult = 1 + Math.random() * 2;
+        this.startVec = this.distVec.multiply(startMult);
         this.x = this.startVec.x;
         this.y = this.startVec.y;
         this.z = this.startVec.z;
 
-        this.veloRate = 0.5+Math.random()*1;
+        this.veloRate = 1 + Math.random() * 1;
         this.velo = this.unitVec.negative().multiply(this.veloRate);
+        this.finalVelo = 0;
         this.m = fLen / (fLen - this.z);
 
-        this.age = this.life = 50 + Math.floor(Math.random()*500);
+        this.age = this.life = 50 + Math.floor(Math.random() * 500);
         this.proj = {};
         this.turnAngle = 0;
+        this.wanderTime = 200;
+        this.radius = 1 + Math.random() * 3;
+
+
+        var colorRandom = Math.floor(Math.random() * 4);
+        if (colorRandom === 0) {
+            this.img = dotImageList[0];
+            this.color = "rgba(70,255,140,";
+        } else if(colorRandom === 1){
+            this.img = dotImageList[1];
+            this.color = "rgba(90,90,90,";
+        } else if(colorRandom === 2){
+            this.img = dotImageList[2];
+        } else if(colorRandom === 3){
+            this.img = dotImageList[3];
+        }
     };
 
     Particle.prototype.update = function () {
         this.nowPos = new Vector(this.x, this.y, this.z);
-        if (this.nowPos.length() > sphereRad) {
-//            this.velo.x += 0.03 * (Math.random()*2-1);
-//            this.velo.y += 0.03 * (Math.random()*2-1);
-//            this.velo.z += 0.03 * (Math.random()*2-1);
+        this.nowPosUnit = this.nowPos.unit();
+
+        if (this.wanderTime > 0 && this.nowPos.length() > (sphereRad * 1.2)) {
+            this.wanderTime--;
+            this.velo.x += 0.1 * (Math.random() * 2 - 1);
+            this.velo.y += 0.1 * (Math.random() * 2 - 1);
+            this.velo.z += 0.1 * (Math.random() * 2 - 1);
             this.x = this.x + this.velo.x;
             this.y = this.y + this.velo.y;
             this.z = this.z + this.velo.z;
-            this.op = util.map(this.nowPos.length(), sphereRad, this.startVec.length(), 1,0);
-        } else {
-//            this.nowPos = this.distPos;
-            this.life--;
-            this.op = this.life/(this.age/2);
-            this.turnAngle = (this.turnAngle + turnSpeed) % (Math.PI*2);
+            this.op = util.map(this.nowPos.length(), sphereRad, this.startVec.length(), 1, 0);
+
+        }
+
+        else if (this.nowPos.length() > sphereRad) {
+            if(this.finalPos ===0){
+                this.finalPos = this.nowPosUnit.multiply(sphereRad);
+            }
+            if(this.finalVelo === 0){
+                this.finalVelo = this.nowPosUnit.negative().multiply(this.veloRate);
+            }
+            this.x = this.x + this.finalVelo.x;
+            this.y = this.y + this.finalVelo.y;
+            this.z = this.z + this.finalVelo.z;
+            this.op = util.map(this.nowPos.length(), sphereRad, this.startVec.length(), 1, 0);
+        }
+
+
+        else {
+            this.op = this.life / (this.age / 2);
+            this.turnAngle = (this.turnAngle + turnSpeed) % (Math.PI * 2);
             var cosAngle = Math.cos(turnSpeed);
             var sinAngle = Math.sin(turnSpeed);
             this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
             this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
-            this.y = this.distPos.y;
+            this.y = this.nowPos.y;
+            this.life--;
         }
 
-//        this.proj.x = cosAngle * this.x + sinAngle*this.z;
-//        this.proj.z =  -sinAngle*this.x + cosAngle*this.z;
-//        this.proj.y = this.distPos.y;
         this.m = fLen / (fLen - this.z);
     };
 
-//    var p = new Particle();
-
-//    for (var i = 0; i < maxParticle; i++) {
-//        var p = new Particle();
-//        particles.push(p);
-//    }
 
     function loop() {
         context.clearRect(0, 0, width, height);
-        if(particles.length<maxParticle){
+        if (particles.length < maxParticle) {
             var p = new Particle();
             particles.push(p);
         }
         for (var i = 0; i < particles.length; i++) {
             var p = particles[i];
-            if(p.life === 0){
-                particles.splice(i,1);
+            if (p.life === 0) {
+                particles.splice(i, 1);
                 var p = new Particle();
                 particles.push(p);
             }
+
             p.update();
-            var alpha = util.map(p.z, -sphereRad, sphereRad, 0.3, 1);
-            context.fillStyle = "rgba(70,255,140," + p.op + ")";
-            context.beginPath();
-//            context.arc(p.x + width / 2, height / 2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
-            context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2 * p.m, 0, Math.PI * 2);
-            context.fill();
+
+            if (p.m > 0) {
+                context.save();
+                context.globalAlpha = p.op;
+                context.drawImage(p.img,p.x * p.m + CenterX, CenterY - p.y * p.m,p.radius*p.m*2,p.radius*p.m*2);
+                context.restore();
+//                context.fillStyle = p.color + p.op + ")";
+//                context.beginPath();
+//                context.arc(p.x * p.m + CenterX, CenterY - p.y * p.m, p.radius * p.m, 0, Math.PI * 2);
+//                context.fill();
+            }
         }
         requestAnimationFrame(loop);
     }
     loop();
-    gui.add(this,"turnSpeed",0.001,0.01);
+    gui.add(this, "turnSpeed", 0.001, 0.01);
 </script>
 </body>
 </html>
