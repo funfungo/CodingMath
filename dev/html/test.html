@@ -5,7 +5,6 @@
     <title>Spring</title>
     <script src="../js/vector3.js"></script>
     <script src="../js/util.js"></script>
-    <script src="../js/dat.gui.js"></script>
     <!--<script src="../js/particle.js"></script>-->
     <style>
         * {
@@ -24,8 +23,6 @@
 <body>
 <canvas id="canvas"></canvas>
 <script>
-
-    var gui = new dat.GUI();
     var canvas = document.getElementById("canvas");
     var context = canvas.getContext("2d");
     var width = canvas.width = window.innerWidth;
@@ -35,22 +32,24 @@
     var sphereRad = 130;
     var fLen = 300;
 
-    var maxParticle = 400;
+
     var particles = [];
     var sphereObject = [];
-    var turnSpeed = 0.005;
+    var turnSpeed = 0.01;
 
-    var Particle = function (add) {
-        var theta;
-        if(add === true){
-            theta = Math.PI / 2;
-        }else {
-            theta = Math.random() * Math.PI;
-        }
+    var Particle = function () {
+
         this.distPos = {
-            theta: theta,
+            theta: Math.random() * Math.PI,
             phi: 2 * Math.random() * Math.PI
         };
+
+        this.proj = {};
+        this.turnAngle = 0;
+        this.init();
+    };
+
+    Particle.prototype.init = function () {
 
         this.distPos.x = sphereRad * Math.sin(this.distPos.theta) * Math.cos(this.distPos.phi);
         this.distPos.y = sphereRad * Math.sin(this.distPos.theta) * Math.sin(this.distPos.phi);
@@ -58,40 +57,34 @@
         this.distVec = new Vector(this.distPos.x, this.distPos.y, this.distPos.z);
         this.unitVec = this.distVec.unit();
 
+
         var startMult = 1+Math.random()*1;
         this.startVec =this.distVec.multiply(startMult);
         this.x = this.startVec.x;
         this.y = this.startVec.y;
         this.z = this.startVec.z;
 
-        this.veloRate = 0.5+Math.random()*1;
-        this.velo = this.unitVec.negative().multiply(this.veloRate);
+        this.velo = this.unitVec.negative().multiply(0.5+Math.random()*2);
         this.m = fLen / (fLen - this.z);
+//        this.angle = {
+//            theta: this.distPos.theta * 180 / Math.PI,
+//            phi: this.distPos.phi * 180 / Math.PI
+//        }
 
-        this.age = this.life = 50 + Math.floor(Math.random()*500);
-        this.proj = {};
-        this.turnAngle = 0;
     };
 
     Particle.prototype.update = function () {
         this.nowPos = new Vector(this.x, this.y, this.z);
         if (this.nowPos.length() > sphereRad) {
-//            this.velo.x += 0.03 * (Math.random()*2-1);
-//            this.velo.y += 0.03 * (Math.random()*2-1);
-//            this.velo.z += 0.03 * (Math.random()*2-1);
             this.x = this.x + this.velo.x;
             this.y = this.y + this.velo.y;
             this.z = this.z + this.velo.z;
-            this.op = util.map(this.nowPos.length(), sphereRad, this.startVec.length(), 1,0);
         } else {
-//            this.nowPos = this.distPos;
-            this.life--;
-            this.op = this.life/(this.age/2);
-            this.turnAngle = (this.turnAngle + turnSpeed) % (Math.PI*2);
+            this.turnAngle += turnSpeed % (2 * Math.PI);
             var cosAngle = Math.cos(turnSpeed);
             var sinAngle = Math.sin(turnSpeed);
-            this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
-            this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
+            this.x = cosAngle * this.x + sinAngle * this.z;
+            this.z = -sinAngle * this.x + cosAngle * this.z;
             this.y = this.distPos.y;
         }
 
@@ -103,27 +96,18 @@
 
 //    var p = new Particle();
 
-//    for (var i = 0; i < maxParticle; i++) {
-//        var p = new Particle();
-//        particles.push(p);
-//    }
+    for (var i = 0; i < 250; i++) {
+        var p = new Particle();
+        particles.push(p);
+    }
 
     function loop() {
         context.clearRect(0, 0, width, height);
-        if(particles.length<maxParticle){
-            var p = new Particle();
-            particles.push(p);
-        }
-        for (var i = 0; i < particles.length; i++) {
+        for (var i = 0; i < 250; i++) {
             var p = particles[i];
-            if(p.life === 0){
-                particles.splice(i,1);
-                var p = new Particle();
-                particles.push(p);
-            }
             p.update();
             var alpha = util.map(p.z, -sphereRad, sphereRad, 0.3, 1);
-            context.fillStyle = "rgba(70,255,140," + p.op + ")";
+            context.fillStyle = "rgba(70,255,140," + alpha + ")";
             context.beginPath();
 //            context.arc(p.x + width / 2, height / 2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
             context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2 * p.m, 0, Math.PI * 2);
@@ -132,7 +116,6 @@
         requestAnimationFrame(loop);
     }
     loop();
-    gui.add(this,"turnSpeed",0.001,0.01);
 </script>
 </body>
 </html>
