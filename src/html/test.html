@@ -2,314 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Spring</title>
-    <script src="../js/vector3.js"></script>
-    <script src="../js/util.js"></script>
-    <script src="../js/dat.gui.js"></script>
-    <!--<script src="../js/particle.js"></script>-->
+    <title>Title</title>
+    <link href='http://fonts.googleapis.com/css?family=Varela' rel='stylesheet' type='text/css'>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
+        body{
+            background:black;
+            font-family: 'Varela', sans-serif;
         }
-
-        body {
-            color: #ffffff;
+        .glitch {
+            color:white;
+            font-size:100px;
+            width:400px;
+            margin:0 auto;
+            position: relative;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #191919;
-            /*background: #212020 url(../img/gatherround/bg.png) center top;*/
-            text-align: center;
         }
+        .glitch::before {
+            /* ... anything needed to make it identical */
 
-        .box1 {
+            /* variation */
+            left: 2px;
+            text-shadow: -1px 0 red;
 
+            /* important: opaque background masks the original */
+            background: black;
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            /* ... anything needed to make it identical */
+            display: none;
+            /* variation */
+            left: -2px;
+            text-shadow: -1px 0 blue;
+
+            /* important: opaque background masks the original */
+            background: black;
+            clip: rect(50px, 9999px, 80px, 0);
+
+        }
+        @keyframes glitch-anim-1 {
+            0% {
+                clip: rect(70px, 9999px, 76px, 0);
+            }
+            20% {
+                clip: rect(29px, 9999px, 16px, 0);
+            }
+            40% {
+                clip: rect(76px, 9999px, 3px, 0);
+            }
+            60% {
+                clip: rect(42px, 9999px, 78px, 0);
+            }
+            80% {
+                clip: rect(15px, 9999px, 13px, 0);
+            }
+            100% {
+                clip: rect(53px, 9999px, 5px, 0);
+            }
         }
     </style>
 </head>
 <body>
-<!--<div class="box1">Contecting</div>-->
-<!--<div class="box2">&lt;Datal&gt;</div>-->
-<!--<div class="box3">To over a half</div>-->
-<canvas id="canvas"></canvas>
-<script>
-
-    var gui = new dat.GUI();
-
-    var canvas = document.getElementById("canvas");
-    var context = canvas.getContext("2d");
-    var width = canvas.width = window.innerWidth;
-    var height = canvas.height = window.innerHeight;
-    var centerX = width / 2;
-    var centerY = height / 2;
-
-
-    var dotImage = new Image();
-    dotImage.src = "http://wximg.qq.com/tmt/coding-math/dist/img/gatherround/dot1.png";
-    dotImage.onload = function () {
-        loop();
-    };
-
-
-    var fLen = 300;
-    var maxParticle = 400;
-    var particles = [];
-    var veloRate;
-    var processTime = 0;
-    var flagTime = maxParticle * 3;
-
-
-    //debug
-    var sphereRad = 130;
-    var turnSpeed = 0.005;
-    var greenDotSmallR = 2;
-    var greenDotBigR = 2;
-    var grayDotR = 1.3;
-    var finalGreenPercent = 0.6;
-    var greenDotBigPercent = 0.82;
-    var colorGray1 = [64,64,64];
-    var colorGray2 = [40,40,40];
-    var colorGreen = [9,187,7];
-
-
-    var Particle = function (add) {
-        this.startPos = {
-            theta: Math.random() * Math.PI,
-            phi: 2 * Math.random() * Math.PI
-        };
-        this.startLen = (1.5 + Math.random() * 0.5) * sphereRad;
-        var x = this.startLen * Math.sin(this.startPos.theta) * Math.cos(this.startPos.phi);
-        var y = this.startLen * Math.sin(this.startPos.theta) * Math.sin(this.startPos.phi);
-        var z = this.startLen * Math.cos(this.startPos.theta);
-        this.nowPos = new Vector(x, y, z);
-
-        this.veloRate = 1 + Math.random() * 2;
-        this.velo = this.nowPos.unit().negative().multiply(this.veloRate);
-        this.accVelo = new Vector(0,0,0);
-        this.finalVelo = 0;
-        this.m = fLen / (fLen - this.nowPos.z);
-
-        this.life = 50 + Math.floor(Math.random() * 500);
-        this.age = 0;
-        this.turnAngle = 0;
-        this.wanderTime = 200;
-        this.radius = grayDotR / 2 + (Math.random() * grayDotR) / 2;
-
-        this.proj = {};
-        this.hover = false;
-        this.hoverVelo = new Vector(0, 0, 0);
-        this.hoverTime = 50;
-
-        var randomColor = Math.random();
-        if (randomColor < (processTime / flagTime) && randomColor < finalGreenPercent) {
-            if (Math.random() > greenDotBigPercent) {
-//                this.color = "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+",";
-                this.radius = greenDotSmallR / 2;
-                this.color = "green";
-            } else {
-                this.img = dotImage;
-                this.radius = greenDotBigR / 2 + (Math.random() * greenDotBigR) / 2;
-            }
-        } else {
-            if (Math.random() > 0.5) {
-                this.color = "gray1";
-//                this.color = "rgba("+Math.floor(colorGray1[0])+","+Math.floor(colorGray1[1])+","+Math.floor(colorGray1[2])+",";
-            } else {
-                this.color = "gray2";
-//                this.color = "rgba("+Math.floor(colorGray2[0])+","+Math.floor(colorGray2[1])+","+Math.floor(colorGray2[2])+",";
-            }
-        }
-    };
-
-    Particle.prototype.update = function () {
-        this.nowPosUnit = this.nowPos.unit();
-
-        if (this.hover === true) {
-            var x = 0.2 * (Math.random() * 2 - 1);
-            var y = 0.2 * (Math.random() * 2 - 1);
-            var z = 0.01 + 0.02 * (Math.random());
-            this.accVelo = new Vector(x, y, z);
-            this.hoverVelo = this.hoverVelo.add(this.accVelo);
-            this.nowPos = this.nowPos.add(this.hoverVelo);
-            this.hoverTime--;
-            this.age++;
-            if(this.op>0){
-                this.op = this.op - 0.015;
-            }else {
-                this.op = 0;
-            }
-        }
-
-        else {
-            if (this.wanderTime > 0 && this.nowPos.length() > (sphereRad * 1.2)) {
-                this.wanderTime--;
-                this.velo.x += 0.2 * (Math.random() * 2 - 1);
-                this.velo.y += 0.2*  (Math.random() * 2 - 1);
-                this.velo.z += 0.2 * (Math.random() * 2 - 1);
-                this.nowPos = this.nowPos.add(this.velo);
-                this.op = util.map(this.nowPos.length(), sphereRad, this.startLen, 1, 0);
-            }
-
-            else if (this.nowPos.length() > sphereRad) {
-                if (this.finalPos === 0) {
-                    this.finalPos = this.nowPosUnit.multiply(sphereRad);
-                }
-                if (this.finalVelo === 0) {
-                    this.finalVelo = this.nowPosUnit.negative().multiply(this.veloRate);
-                }
-                this.nowPos = this.nowPos.add(this.finalVelo);
-                this.op = util.map(this.nowPos.length(), sphereRad,  this.startLen, 1, 0);
-            }
-
-
-            else {
-                this.finalPos = 0;
-                this.finalVelo = 0;
-                this.op = (this.life - this.age) / (this.life / 2);
-                this.turnAngle = (this.turnAngle + turnSpeed) % (Math.PI * 2);
-                var cosAngle = Math.cos(turnSpeed);
-                var sinAngle = Math.sin(turnSpeed);
-                this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
-                this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
-                this.y = this.nowPos.y;
-                this.nowPos = new Vector(this.x, this.y, this.z);
-                this.age++;
-            }
-        }
-
-
-        this.m = fLen / (fLen - this.nowPos.z);
-        this.proj = {
-            x: this.nowPos.x * this.m + centerX,
-            y: this.nowPos.y * this.m + centerY,
-            r: this.radius * this.m * 2
-        }
-    };
-
-
-    var add = 0;
-    function loop() {
-        var p = null;
-        context.clearRect(0, 0, width, height);
-        if(hover){
-            context.save();
-            context.globalAlpha = 0.5;
-            context.drawImage(dotImage, eventX-30, eventY-30, 40, 40);
-            context.restore();
-        }
-        var pl = particles.length;
-        if (pl < maxParticle) {
-            if (pl < 0.3 * maxParticle) {
-                add++;
-
-                if (add === 5) {
-                    add = 0;
-                    p = new Particle();
-                    p.veloRate = 0.5;
-                }
-            }
-            else if (pl < 0.7 * maxParticle) {
-                p = new Particle();
-                p.veloRate = 1 + Math.random() * 1;
-            }
-            else {
-                p = new Particle();
-                p.veloRate = 0.5 + Math.random() * 0.5;
-
-            }
-            if (p !== null) {
-                processTime++;
-                particles.push(p);
-            }
-        }
-
-        for (var i = 0; i < particles.length; i++) {
-            var p = particles[i];
-            if (p.age === p.life) {
-                particles.splice(i, 1);
-                var p = new Particle();
-                p.veloRate = 0.5 + Math.random() * 0.5;
-                particles.push(p);
-                processTime++;
-            }
-
-            p.update();
-
-            if (p.m > 0) {
-                if (p.color !== undefined) {
-                    if(p.color == "gray1"){
-                        context.fillStyle = "rgba("+Math.floor(colorGray1[0])+","+Math.floor(colorGray1[1])+","+Math.floor(colorGray1[2])+","+p.op+")";
-                    }else if(p.color == "gray2"){
-                        context.fillStyle = "rgba("+Math.floor(colorGray2[0])+","+Math.floor(colorGray2[1])+","+Math.floor(colorGray2[2])+","+p.op+")";
-                    }else if(p.color == "green"){
-                        context.fillStyle = "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+","+p.op+")";
-                    }
-                    context.beginPath();
-                    context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
-                    context.fill();
-                } else {
-//                    context.save();
-//                    context.globalAlpha = p.op;
-//                    context.drawImage(p.img, p.proj.x, p.proj.y, p.proj.r, p.proj.r);
-//                    context.restore();
-                    context.beginPath();
-                    var gradient = context.createRadialGradient(p.proj.x,p.proj.y,0,p.proj.x,p.proj.y,p.proj.r);
-                    gradient.addColorStop(0, "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+","+p.op+")");
-                    gradient.addColorStop(1,"rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+",0)");
-                    context.save();
-                    context.globalAlpha = p.op;
-                    context.fillStyle = gradient;
-                    context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
-                    context.fill();
-                    context.restore();
-                }
-
-
-            }
-        }
-        requestAnimationFrame(loop);
-    }
-
-    var eventX, eventY;
-    var hover;
-    document.addEventListener("mousemove", function (e) {
-        eventX = e.clientX;
-        eventY = e.clientY;
-        if (Math.abs(eventX - centerX) < sphereRad && Math.abs(eventY - centerY) < sphereRad) {
-            hover = true;
-            for (var i = 0; i < particles.length; i++) {
-                var p = particles[i];
-                if (Math.abs(p.proj.x - eventX) < 25 && Math.abs(p.proj.y - eventY) < 25 && p.age > 0 && p.hover === false) {
-                    p.hover = true;
-                } else {
-                }
-            }
-        }else {
-            hover = false;
-        }
-    });
-    var f1 = gui.addFolder('Global');
-    var f2 = gui.addFolder('DotRadius');
-    var f3 = gui.addFolder('DotAmount');
-    var f4 = gui.addFolder('Color');
-
-    f1.add(this, "turnSpeed", 0.001, 0.01);
-    f1.add(this, "sphereRad", 100, 200);
-
-
-    f2.add(this, "greenDotSmallR", 0, 5);
-    f2.add(this, "greenDotBigR", 0, 5);
-    f2.add(this, "grayDotR", 0, 5);
-    f3.add(this, "finalGreenPercent", 0, 1);
-    f3.add(this, "greenDotBigPercent", 0, 1);
-    f4.addColor(this, "colorGray1");
-    f4.addColor(this, "colorGray2");
-    f4.addColor(this, "colorGreen");
-    f1.open();
-    f2.open();
-    f3.open();
-    f4.open();
-</script>
+    <div class="glitch" data-text="GLITCH">GLITCH</div>
 </body>
 </html>
