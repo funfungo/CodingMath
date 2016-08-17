@@ -6,7 +6,7 @@
     <script src="../js/vector3.js"></script>
     <script src="../js/util.js"></script>
     <script src="../js/dat.gui.js"></script>
-    <!--<script src="../js/particle.js"></script>-->
+    <script src="../js/Tween.js"></script>
     <style>
         * {
             margin: 0;
@@ -23,7 +23,6 @@
             text-align: center;
         }
 
-
         .content {
             position: absolute;
             left: 0;
@@ -33,7 +32,8 @@
             background: url(../img/gatherround/bg.png) center top;
             background-size: auto 100%;
         }
-        .content img{
+
+        .content img {
             width: 100%;
         }
     </style>
@@ -42,92 +42,108 @@
 <canvas id="canvas"></canvas>
 <div class="content"></div>
 <script>
-
     var gui = new dat.GUI();
 
     var canvas = document.getElementById("canvas");
     var context = canvas.getContext("2d");
-    var width = canvas.width = window.innerWidth;
-    var height = canvas.height = window.innerHeight;
-
-
-
+    
+    //    **use image as green blur dot
     var dotImage = new Image();
     dotImage.src = "http://wximg.qq.com/tmt/coding-math/dist/img/gatherround/dot1.png";
     dotImage.onload = function () {
         loop();
     };
 
+    //deploy parameters
+    var aniDeploy = {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        centerXOffset: 200,
+        centerY: 510,
+        maxParticle: 400,
+        processTime: 0,
+        //debugging
+        sphereRad: 210,
+        greenDotSmallR: 2.5,
+        greenDotBigR: 3,
+        turnSpeed: 0.005,
+        fLen: 600,
+        grayDotR: 2,
+        finalGreenPercent: 0.6,
+        greenDotBigPercent: 0.82,
+        colorGray1: [64, 64, 64],
+        colorGray2: [40, 40, 40],
+        colorGreen: [9, 187, 7]
+    };
+    aniDeploy.centerX = aniDeploy.width / 2 + aniDeploy.centerXOffset;
+    aniDeploy.centerLeft = aniDeploy.width / 2 - aniDeploy.centerXOffset;
+    aniDeploy.flagTime = aniDeploy.maxParticle * 3;
 
-    var maxParticle = 400;
+    
+    canvas.width = aniDeploy.width;
+    canvas.height = aniDeploy.height;
+
     var particles = [];
-    var veloRate;
-    var processTime = 0;
-    var flagTime = maxParticle * 3;
-    var centerXVelo = -0.2;
-    var centerXOffset = 200;
-
-    //debug
-    var sphereRad = 210;
-    var turnSpeed = 0.005;
-    var fLen = 600;
-    var centerXVelo = -0.3;
-    var centerX = width / 2 + centerXOffset;
-    var centerY = height / 2 -20 ;
-
-    var greenDotSmallR = 2.5;
-    var greenDotBigR = 3;
-    var grayDotR = 2;
-    var finalGreenPercent = 0.6;
-    var greenDotBigPercent = 0.82;
-    var colorGray1 = [64,64,64];
-    var colorGray2 = [40,40,40];
-    var colorGreen = [9,187,7];
 
 
 
-    var Particle = function (add) {
+    var Particle = function () {
+        //random start position by angle
         this.startPos = {
             theta: Math.random() * Math.PI,
             phi: 2 * Math.random() * Math.PI
         };
-        this.startLen = (2 + Math.random() * 0.5) * sphereRad;
+        //start postion out of sphere so the start radius range set between (2~2.5)*sphere radius
+        this.startLen = (2 + Math.random() * 0.5) * aniDeploy.sphereRad;
+        //count coordinate of start position
         var x = this.startLen * Math.sin(this.startPos.theta) * Math.cos(this.startPos.phi);
         var y = this.startLen * Math.sin(this.startPos.theta) * Math.sin(this.startPos.phi);
         var z = this.startLen * Math.cos(this.startPos.theta);
+        //use vector to represent coordinate
         this.nowPos = new Vector(x, y, z);
 
         this.veloRate = 2 + Math.random() * 2;
         this.velo = this.nowPos.unit().negative().multiply(this.veloRate);
-        this.accVelo = new Vector(0,0,0);
+        this.accVelo = new Vector(0, 0, 0);
         this.finalVelo = 0;
-        this.m = fLen / (fLen - this.nowPos.z);
+        this.m = aniDeploy.fLen / (aniDeploy.fLen - this.nowPos.z);
 
+        //particle life span and age
+        //when particle's age equal to life ,it dies
         this.life = 50 + Math.floor(Math.random() * 500);
         this.age = 0;
+        //
         this.turnAngle = 0;
+
+        //random walk time
+        //random walk make animation more nature
         this.wanderTime = 300;
-        this.radius = grayDotR / 2 + (Math.random() * grayDotR) / 2;
+        //default particle radius
+        this.radius = aniDeploy.grayDotR / 2 + (Math.random() * aniDeploy.grayDotR) / 2;
 
         this.proj = {};
+
+        //hover event parameter setting
         this.hover = false;
         this.hoverVelo = new Vector(0, 0, 0);
         this.hoverTime = 50;
 
+        //different color setting
         var randomColor = Math.random();
-        if (randomColor < (processTime / flagTime) && randomColor < finalGreenPercent) {
-            if (Math.random() > greenDotBigPercent) {
+        //color
+        if (randomColor < (aniDeploy.processTime / aniDeploy.flagTime) && randomColor < aniDeploy.finalGreenPercent) {
+            if (Math.random() > aniDeploy.greenDotBigPercent) {
 //                this.color = "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+",";
-                this.radius = greenDotSmallR / 2;
+                this.radius = aniDeploy.greenDotSmallR / 2;
                 this.color = "green";
             } else {
                 this.img = dotImage;
-                this.radius = greenDotBigR / 2 + (Math.random() * greenDotBigR) / 2;
+                this.radius = aniDeploy.greenDotBigR / 2 + (Math.random() * aniDeploy.greenDotBigR) / 2;
             }
         } else {
             if (Math.random() > 0.5) {
                 this.color = "gray1";
-//                this.color = "rgba("+Math.floor(colorGray1[0])+","+Math.floor(colorGray1[1])+","+Math.floor(colorGray1[2])+",";
+//                this.color = "rgba("+Math.floor(aniDeploy.colorGray1[0])+","+Math.floor(aniDeploy.colorGray1[1])+","+Math.floor(aniDeploy.colorGray1[2])+",";
             } else {
                 this.color = "gray2";
 //                this.color = "rgba("+Math.floor(colorGray2[0])+","+Math.floor(colorGray2[1])+","+Math.floor(colorGray2[2])+",";
@@ -147,32 +163,32 @@
             this.nowPos = this.nowPos.add(this.hoverVelo);
             this.hoverTime--;
             this.age++;
-            if(this.op>0){
+            if (this.op > 0) {
                 this.op = this.op - 0.01;
-            }else {
+            } else {
                 this.op = 0;
             }
         }
 
         else {
-            if (this.wanderTime > 0 && this.nowPos.length() > (sphereRad * 1.2)) {
+            if (this.wanderTime > 0 && this.nowPos.length() > (aniDeploy.sphereRad * 1.2)) {
                 this.wanderTime--;
                 this.velo.x += 0.2 * (Math.random() * 2 - 1);
-                this.velo.y += 0.2*  (Math.random() * 2 - 1);
+                this.velo.y += 0.2 * (Math.random() * 2 - 1);
                 this.velo.z += 0.2 * (Math.random() * 2 - 1);
                 this.nowPos = this.nowPos.add(this.velo);
-                this.op = util.map(this.nowPos.length(), sphereRad, this.startLen, 1, 0);
+                this.op = util.map(this.nowPos.length(), aniDeploy.sphereRad, this.startLen, 1, 0);
             }
 
-            else if (this.nowPos.length() > sphereRad) {
+            else if (this.nowPos.length() > aniDeploy.sphereRad) {
                 if (this.finalPos === 0) {
-                    this.finalPos = this.nowPosUnit.multiply(sphereRad);
+                    this.finalPos = this.nowPosUnit.multiply(aniDeploy.sphereRad);
                 }
                 if (this.finalVelo === 0) {
-                    this.finalVelo = this.nowPosUnit.negative().multiply(this.veloRate+1);
+                    this.finalVelo = this.nowPosUnit.negative().multiply(this.veloRate + 1);
                 }
                 this.nowPos = this.nowPos.add(this.finalVelo);
-                this.op = util.map(this.nowPos.length(), sphereRad,  this.startLen, 1, 0);
+                this.op = util.map(this.nowPos.length(), aniDeploy.sphereRad, this.startLen, 1, 0);
             }
 
 
@@ -180,9 +196,9 @@
                 this.finalPos = 0;
                 this.finalVelo = 0;
                 this.op = (this.life - this.age) / (this.life / 2);
-                this.turnAngle = (this.turnAngle + turnSpeed) % (Math.PI * 2);
-                var cosAngle = Math.cos(turnSpeed);
-                var sinAngle = Math.sin(turnSpeed);
+                this.turnAngle = (this.turnAngle + aniDeploy.turnSpeed) % (Math.PI * 2);
+                var cosAngle = Math.cos(aniDeploy.turnSpeed);
+                var sinAngle = Math.sin(aniDeploy.turnSpeed);
                 this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
                 this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
                 this.y = this.nowPos.y;
@@ -192,33 +208,46 @@
         }
 
 
-        this.m = fLen / (fLen - this.nowPos.z);
+        this.m = aniDeploy.fLen / (aniDeploy.fLen - this.nowPos.z);
         this.proj = {
-            x: this.nowPos.x * this.m + centerX,
-            y: this.nowPos.y * this.m + centerY,
+            x: this.nowPos.x * this.m + aniDeploy.centerX,
+            y: this.nowPos.y * this.m + aniDeploy.centerY,
             r: this.radius * this.m * 2
         }
     };
 
 
+    var aniSphere = new TWEEN.Tween(aniDeploy);
+    aniSphere.to({centerX: aniDeploy.centerLeft}, 10000)
+        .repeat(Infinity)
+        .yoyo(true)
+        .delay(5000)
+        .easing(TWEEN.Easing.Sinusoidal.InOut)
+        .onReversed(
+            function () {
+                aniDeploy.turnSpeed = -aniDeploy.turnSpeed;
+            }
+        )
+        .start();
+
     var add = 0;
     function loop() {
         var p = null;
-        context.clearRect(0, 0, width, height);
-        centerX += centerXVelo;
-        if(centerX < width/2 - centerXOffset || centerX > width/2 + centerXOffset){
-            centerXVelo = -centerXVelo;
-            turnSpeed = -turnSpeed;
-        }
-        if(hover){
+        context.clearRect(0, 0, aniDeploy.width, aniDeploy.height);
+//        centerX += centerXVelo;
+//        if(centerX < width/2 - centerXOffset || centerX > width/2 + centerXOffset){
+//            centerXVelo = -centerXVelo;
+//            aniDeploy.turnSpeed = -aniDeploy.turnSpeed;
+//        }
+        if (hover) {
             context.save();
             context.globalAlpha = 0.5;
-            context.drawImage(dotImage, eventX-30, eventY-30, 40, 40);
+            context.drawImage(dotImage, eventX - 30, eventY - 30, 40, 40);
             context.restore();
         }
         var pl = particles.length;
-        if (pl < maxParticle) {
-            if (pl < 0.2 * maxParticle) {
+        if (pl < aniDeploy.maxParticle) {
+            if (pl < 0.2 * aniDeploy.maxParticle) {
                 add++;
 
                 if (add === 3) {
@@ -227,7 +256,7 @@
                     p.veloRate = 0.5;
                 }
             }
-            else if (pl < 0.7 * maxParticle) {
+            else if (pl < 0.7 * aniDeploy.maxParticle) {
                 p = new Particle();
                 p.veloRate = 1 + Math.random() * 1;
             }
@@ -237,7 +266,7 @@
 
             }
             if (p !== null) {
-                processTime++;
+                aniDeploy.processTime++;
                 particles.push(p);
             }
         }
@@ -249,19 +278,19 @@
                 var p = new Particle();
                 p.veloRate = 0.5 + Math.random() * 0.5;
                 particles.push(p);
-                processTime++;
+                aniDeploy.processTime++;
             }
 
             p.update();
 
             if (p.m > 0) {
                 if (p.color !== undefined) {
-                    if(p.color == "gray1"){
-                        context.fillStyle = "rgba("+Math.floor(colorGray1[0])+","+Math.floor(colorGray1[1])+","+Math.floor(colorGray1[2])+","+p.op+")";
-                    }else if(p.color == "gray2"){
-                        context.fillStyle = "rgba("+Math.floor(colorGray2[0])+","+Math.floor(colorGray2[1])+","+Math.floor(colorGray2[2])+","+p.op+")";
-                    }else if(p.color == "green"){
-                        context.fillStyle = "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+","+p.op+")";
+                    if (p.color == "gray1") {
+                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGray1[0]) + "," + Math.floor(aniDeploy.colorGray1[1]) + "," + Math.floor(aniDeploy.colorGray1[2]) + "," + p.op + ")";
+                    } else if (p.color == "gray2") {
+                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGray2[0]) + "," + Math.floor(aniDeploy.colorGray2[1]) + "," + Math.floor(aniDeploy.colorGray2[2]) + "," + p.op + ")";
+                    } else if (p.color == "green") {
+                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")";
                     }
                     context.beginPath();
                     context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
@@ -272,9 +301,9 @@
 //                    context.drawImage(p.img, p.proj.x, p.proj.y, p.proj.r, p.proj.r);
 //                    context.restore();
                     context.beginPath();
-                    var gradient = context.createRadialGradient(p.proj.x,p.proj.y,0,p.proj.x,p.proj.y,p.proj.r);
-                    gradient.addColorStop(0, "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+","+p.op+")");
-                    gradient.addColorStop(1,"rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+",0)");
+                    var gradient = context.createRadialGradient(p.proj.x, p.proj.y, 0, p.proj.x, p.proj.y, p.proj.r);
+                    gradient.addColorStop(0, "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")");
+                    gradient.addColorStop(1, "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + ",0)");
                     context.save();
                     context.globalAlpha = p.op;
                     context.fillStyle = gradient;
@@ -286,15 +315,18 @@
 
             }
         }
+        TWEEN.update();
         requestAnimationFrame(loop);
     }
 
     var eventX, eventY;
     var hover;
+
+    //hover event
     document.addEventListener("mousemove", function (e) {
         eventX = e.clientX;
         eventY = e.clientY;
-        if (Math.abs(eventX - centerX) < sphereRad && Math.abs(eventY - centerY) < sphereRad) {
+        if (Math.abs(eventX - aniDeploy.centerX) < aniDeploy.sphereRad && Math.abs(eventY - aniDeploy.centerY) < aniDeploy.sphereRad) {
             hover = true;
             for (var i = 0; i < particles.length; i++) {
                 var p = particles[i];
@@ -303,30 +335,34 @@
                 } else {
                 }
             }
-        }else {
+        } else {
             hover = false;
         }
     });
+
+    //    loop();
+
+    // for debugging
     var f1 = gui.addFolder('Global');
     var f2 = gui.addFolder('DotRadius');
     var f3 = gui.addFolder('DotAmount');
     var f4 = gui.addFolder('Color');
 
-    f1.add(this, "fLen", 200, 1000);
-    f1.add(this, "turnSpeed", 0.001, 0.01);
-    f1.add(this, "sphereRad", 100, 300);
-    f1.add(this, "centerX", 200, 1200);
-    f1.add(this, "centerY", 0, 1000);
+    f1.add(aniDeploy, "fLen", 200, 1000);
+    f1.add(aniDeploy, "turnSpeed", 0.001, 0.01);
+    f1.add(aniDeploy, "sphereRad", 100, 300);
+    f1.add(aniDeploy, "centerX", 200, 1200);
+    f1.add(aniDeploy, "centerY", 0, 1000);
 
 
-    f2.add(this, "greenDotSmallR", 0, 5);
-    f2.add(this, "greenDotBigR", 0, 5);
-    f2.add(this, "grayDotR", 0, 5);
-    f3.add(this, "finalGreenPercent", 0, 1);
-    f3.add(this, "greenDotBigPercent", 0, 1);
-    f4.addColor(this, "colorGray1");
-    f4.addColor(this, "colorGray2");
-    f4.addColor(this, "colorGreen");
+    f2.add(aniDeploy, "greenDotSmallR", 0, 5);
+    f2.add(aniDeploy, "greenDotBigR", 0, 5);
+    f2.add(aniDeploy, "grayDotR", 0, 5);
+    f3.add(aniDeploy, "finalGreenPercent", 0, 1);
+    f3.add(aniDeploy, "greenDotBigPercent", 0, 1);
+    f4.addColor(aniDeploy, "colorGray1");
+    f4.addColor(aniDeploy, "colorGray2");
+    f4.addColor(aniDeploy, "colorGreen");
     f1.open();
     f2.open();
     f3.open();
