@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../js/Tween.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<canvas id="canvas" width="500" height="300"></canvas>
+<script>
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000";
+
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+
+    var total = 400;
+    var dotImage = new Image();
+    dotImage.src = "../img/gatherround/dot1.png";
+
+
+    function inout(k) {
+        return 0.5 * (1 - Math.cos(Math.PI * k));
+    }
+
+    function generateBezier(mX1, mY1, mX2, mY2) {
+        var NEWTON_ITERATIONS = 4,
+            NEWTON_MIN_SLOPE = 0.001,
+            SUBDIVISION_PRECISION = 0.0000001,
+            SUBDIVISION_MAX_ITERATIONS = 10,
+            kSplineTableSize = 11,
+            kSampleStepSize = 1.0 / (kSplineTableSize - 1.0),
+            float32ArraySupported = "Float32Array" in window;
+
+        /* Must contain four arguments. */
+        if (arguments.length !== 4) {
+            return false;
+        }
+
+        /* Arguments must be numbers. */
+        for (var i = 0; i < 4; ++i) {
+            if (typeof arguments[i] !== "number" || isNaN(arguments[i]) || !isFinite(arguments[i])) {
+                return false;
+            }
+        }
+
+        /* X values must be in the [0, 1] range. */
+        mX1 = Math.min(mX1, 1);
+        mX2 = Math.min(mX2, 1);
+        mX1 = Math.max(mX1, 0);
+        mX2 = Math.max(mX2, 0);
+
+        var mSampleValues = float32ArraySupported ? new Float32Array(kSplineTableSize) : new Array(kSplineTableSize);
+
+        function A(aA1, aA2) {
+            return 1.0 - 3.0 * aA2 + 3.0 * aA1;
+        }
+
+        function B(aA1, aA2) {
+            return 3.0 * aA2 - 6.0 * aA1;
+        }
+
+        function C(aA1) {
+            return 3.0 * aA1;
+        }
+
+        function calcBezier(aT, aA1, aA2) {
+            return ((A(aA1, aA2) * aT + B(aA1, aA2)) * aT + C(aA1)) * aT;
+        }
+
+        function getSlope(aT, aA1, aA2) {
+            return 3.0 * A(aA1, aA2) * aT * aT + 2.0 * B(aA1, aA2) * aT + C(aA1);
+        }
+
+        function newtonRaphsonIterate(aX, aGuessT) {
+            for (var i = 0; i < NEWTON_ITERATIONS; ++i) {
+                var currentSlope = getSlope(aGuessT, mX1, mX2);
+
+                if (currentSlope === 0.0) {
+                    return aGuessT;
+                }
+
+                var currentX = calcBezier(aGuessT, mX1, mX2) - aX;
+                aGuessT -= currentX / currentSlope;
+            }
+
+            return aGuessT;
+        }
+
+        function calcSampleValues() {
+            for (var i = 0; i < kSplineTableSize; ++i) {
+                mSampleValues[i] = calcBezier(i * kSampleStepSize, mX1, mX2);
+            }
+        }
+
+        function binarySubdivide(aX, aA, aB) {
+            var currentX, currentT, i = 0;
+
+            do {
+                currentT = aA + (aB - aA) / 2.0;
+                currentX = calcBezier(currentT, mX1, mX2) - aX;
+                if (currentX > 0.0) {
+                    aB = currentT;
+                } else {
+                    aA = currentT;
+                }
+            } while (Math.abs(currentX) > SUBDIVISION_PRECISION && ++i < SUBDIVISION_MAX_ITERATIONS);
+
+            return currentT;
+        }
+
+        function getTForX(aX) {
+            var intervalStart = 0.0,
+                currentSample = 1,
+                lastSample = kSplineTableSize - 1;
+
+            for (; currentSample !== lastSample && mSampleValues[currentSample] <= aX; ++currentSample) {
+                intervalStart += kSampleStepSize;
+            }
+
+            --currentSample;
+
+            var dist = (aX - mSampleValues[currentSample]) / (mSampleValues[currentSample + 1] - mSampleValues[currentSample]),
+                guessForT = intervalStart + dist * kSampleStepSize,
+                initialSlope = getSlope(guessForT, mX1, mX2);
+
+            if (initialSlope >= NEWTON_MIN_SLOPE) {
+                return newtonRaphsonIterate(aX, guessForT);
+            } else if (initialSlope === 0.0) {
+                return guessForT;
+            } else {
+                return binarySubdivide(aX, intervalStart, intervalStart + kSampleStepSize);
+            }
+        }
+
+        var _precomputed = false;
+
+        function precompute() {
+            _precomputed = true;
+            if (mX1 !== mY1 || mX2 !== mY2) {
+                calcSampleValues();
+            }
+        }
+
+        var f = function (aX) {
+            if (!_precomputed) {
+                precompute();
+            }
+            if (mX1 === mY1 && mX2 === mY2) {
+                return aX;
+            }
+            if (aX === 0) {
+                return 0;
+            }
+            if (aX === 1) {
+                return 1;
+            }
+
+            return calcBezier(getTForX(aX), mY1, mY2);
+        };
+
+        f.getControlPoints = function () {
+            return [{x: mX1, y: mY1}, {x: mX2, y: mY2}];
+        };
+
+        var str = "generateBezier(" + [mX1, mY1, mX2, mY2] + ")";
+        f.toString = function () {
+            return str;
+        };
+
+        return f;
+    }
+
+    var easing = generateBezier(.53, .01, .54, 1);
+
+
+    function testBezier() {
+        var start = new Date().getTime();
+
+        for (var i = 0; i <= total; i++) {
+//            var output = i/total;
+
+            var output = easing(i / total);
+//            console.log(output);
+//            var x = width/total*i;
+//            var y = 500*(1-output);
+//            ctx.fillStyle = "#000";
+//            ctx.arc(x, y, 1, 0, Math.PI * 2);
+//            ctx.fill();
+        }
+        console.log("bezier:" + (new Date().getTime() - start));
+
+    }
+
+    function testFunction() {
+        var start = new Date().getTime();
+
+        for (var i = 0; i <= total; i++) {
+//            var output = i/total;
+
+            var output = inout(i / total);
+//            var x = width/total*i;
+//            var y = 500*(1-output);
+//            ctx.fillStyle = "#000";
+//            ctx.arc(x, y, 1, 0, Math.PI * 2);
+//            ctx.fill();
+        }
+        console.log("function:" + (new Date().getTime() - start));
+
+    }
+
+    function testDraw() {
+        var start = new Date().getTime();
+        for (var i = 0; i <= total; i++) {
+            ctx.beginPath();
+//            ctx.moveTo(1,1);
+            ctx.fillRect(1,1,1,1);
+//            ctx.arc(1, 1, 1, 0, Math.PI * 2);
+            ctx.closePath();
+        }
+            ctx.fill();
+
+        console.log("draw:" + (new Date().getTime() - start));
+
+    }
+
+
+    function testGradient() {
+        var start = new Date().getTime();
+        for (var i = 0; i <= total; i++) {
+            ctx.beginPath();
+            var gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, 10);
+            gradient.addColorStop(0, "rgba(9,187,7,1)");
+//            gradient.addColorStop(0.1, "rgba(153,248,153,1)");
+//            gradient.addColorStop(0.2, "rgba(0,255,0,1)");
+            gradient.addColorStop(1, "rgba(255,255,255,0)");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,width,height);
+//            ctx.arc(1, 1, 1, 0, Math.PI * 2);
+        }
+        ctx.fill();
+
+        console.log("gradient:" + (new Date().getTime() - start));
+    }
+
+    function testImage() {
+        var start = new Date().getTime();
+        for(var i = 0; i< total; i++){
+            ctx.drawImage(dotImage, 10, 100, 10, 10);
+        }
+        console.log("drawImage:" + (new Date().getTime() - start));
+    }
+
+    testBezier();
+    testFunction();
+    testDraw();
+//    testGradient();
+    dotImage.onload = function () {
+
+        testImage();
+    };
+//    console.log(new Date().getTime() - start);
+
+</script>
+</body>
+</html>

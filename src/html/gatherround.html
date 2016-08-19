@@ -79,13 +79,20 @@
     aniDeploy.centerLeft = aniDeploy.width / 2 - aniDeploy.centerXOffset;
     aniDeploy.flagTime = aniDeploy.maxParticle * 3;
 
-    
     canvas.width = aniDeploy.width;
     canvas.height = aniDeploy.height;
 
+
+    var aniSphere = new TWEEN.Tween(aniDeploy);
+    aniSphere.to({centerX: aniDeploy.centerLeft}, 10000)
+        .repeat(Infinity)
+        .yoyo(true)
+        .delay(5000)
+        .easing(TWEEN.Easing.Sinusoidal.InOut)
+        .start();
+
+
     var particles = [];
-
-
 
     var Particle = function () {
         //random start position by angle
@@ -155,9 +162,9 @@
         this.nowPosUnit = this.nowPos.unit();
 
         if (this.hover === true) {
-            var x = 0.2 * (Math.random() * 2 - 1);
-            var y = 0.2 * (Math.random() * 2 - 1);
-            var z = 0.01 + 0.02 * (Math.random());
+            var x = 0.5 * (Math.random() * 2 - 1);
+            var y = 0.5 * (Math.random() * 2 - 1);
+            var z = 0.05 + 0.02 * (Math.random());
             this.accVelo = new Vector(x, y, z);
             this.hoverVelo = this.hoverVelo.add(this.accVelo);
             this.nowPos = this.nowPos.add(this.hoverVelo);
@@ -217,39 +224,33 @@
     };
 
 
-    var aniSphere = new TWEEN.Tween(aniDeploy);
-    aniSphere.to({centerX: aniDeploy.centerLeft}, 10000)
-        .repeat(Infinity)
-        .yoyo(true)
-        .delay(5000)
-        .easing(TWEEN.Easing.Sinusoidal.InOut)
-        .onReversed(
-            function () {
-                aniDeploy.turnSpeed = -aniDeploy.turnSpeed;
-            }
-        )
-        .start();
+
 
     var add = 0;
     function loop() {
+
         var p = null;
+
         context.clearRect(0, 0, aniDeploy.width, aniDeploy.height);
 //        centerX += centerXVelo;
 //        if(centerX < width/2 - centerXOffset || centerX > width/2 + centerXOffset){
 //            centerXVelo = -centerXVelo;
 //            aniDeploy.turnSpeed = -aniDeploy.turnSpeed;
 //        }
+
+        //hover indicator
         if (hover) {
             context.save();
             context.globalAlpha = 0.5;
             context.drawImage(dotImage, eventX - 30, eventY - 30, 40, 40);
             context.restore();
         }
+
+        //determine whether to add new particle
         var pl = particles.length;
         if (pl < aniDeploy.maxParticle) {
             if (pl < 0.2 * aniDeploy.maxParticle) {
                 add++;
-
                 if (add === 3) {
                     add = 0;
                     p = new Particle();
@@ -271,6 +272,7 @@
             }
         }
 
+        //particle status update
         for (var i = 0; i < particles.length; i++) {
             var p = particles[i];
             if (p.age === p.life) {
@@ -316,6 +318,12 @@
             }
         }
         TWEEN.update();
+
+
+
+        //
+//        aniDeploy.turnSpeed = Math.abs(aniDeploy.width/2 - aniDeploy.centerXOffset)
+
         requestAnimationFrame(loop);
     }
 
@@ -326,11 +334,11 @@
     document.addEventListener("mousemove", function (e) {
         eventX = e.clientX;
         eventY = e.clientY;
-        if (Math.abs(eventX - aniDeploy.centerX) < aniDeploy.sphereRad && Math.abs(eventY - aniDeploy.centerY) < aniDeploy.sphereRad) {
+        if (Math.abs(eventX - aniDeploy.centerX) < aniDeploy.sphereRad+10 && Math.abs(eventY - aniDeploy.centerY) < aniDeploy.sphereRad + 10) {
             hover = true;
             for (var i = 0; i < particles.length; i++) {
                 var p = particles[i];
-                if (Math.abs(p.proj.x - eventX) < 25 && Math.abs(p.proj.y - eventY) < 25 && p.age > 0 && p.hover === false) {
+                if (Math.abs(p.proj.x - eventX) < 25 && Math.abs(p.proj.y - eventY) < 25  && p.hover === false) {
                     p.hover = true;
                 } else {
                 }

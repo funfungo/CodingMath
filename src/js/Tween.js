@@ -290,11 +290,7 @@ TWEEN.Tween = function (object) {
 		return this;
 
 	};
-    
-    this.onReversed = function (callback) {
-        _onReversedCallback = callback;
-        return this;
-    };
+
 
 	this.onStop = function (callback) {
 
@@ -395,9 +391,7 @@ TWEEN.Tween = function (object) {
 
 				if (_yoyo) {
 					_reversed = !_reversed;
-                    if(_onReversedCallback !== null){
-                        _onReversedCallback.call(_object);
-                    }
+                    
 				}
 
 				if (_repeatDelayTime !== undefined) {
