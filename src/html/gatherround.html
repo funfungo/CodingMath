@@ -46,7 +46,9 @@
 
     var canvas = document.getElementById("canvas");
     var context = canvas.getContext("2d");
-    
+    var pixelRatio = window.devicePixelRatio || 1;
+    var width = window.innerWidth;
+    var height = window.innerHeight;
     //    **use image as green blur dot
     var dotImage = new Image();
     dotImage.src = "http://wximg.qq.com/tmt/coding-math/dist/img/gatherround/dot1.png";
@@ -54,10 +56,12 @@
         loop();
     };
 
+    var particles = [];
+    //beginning add symbol (3 frame each)
+    var add = 0;
+
     //deploy parameters
     var aniDeploy = {
-        width: window.innerWidth,
-        height: window.innerHeight,
         centerXOffset: 200,
         centerY: 485,
         maxParticle: 400,
@@ -75,24 +79,17 @@
         colorGray2: [40, 40, 40],
         colorGreen: [9, 187, 7]
     };
-    aniDeploy.centerX = aniDeploy.width / 2 + aniDeploy.centerXOffset;
-    aniDeploy.centerLeft = aniDeploy.width / 2 - aniDeploy.centerXOffset;
+    aniDeploy.centerX = width / 2 + aniDeploy.centerXOffset;
+    aniDeploy.centerLeft = width / 2 - aniDeploy.centerXOffset;
     aniDeploy.flagTime = aniDeploy.maxParticle * 3;
 
-    canvas.width = aniDeploy.width;
-    canvas.height = aniDeploy.height;
-
-
-    var aniSphere = new TWEEN.Tween(aniDeploy);
-    aniSphere.to({centerX: aniDeploy.centerLeft}, 10000)
-        .repeat(Infinity)
-        .yoyo(true)
-        .delay(5000)
-        .easing(TWEEN.Easing.Sinusoidal.InOut)
-        .start();
-
-
-    var particles = [];
+    function autoPixelRatio() {
+        canvas.width = pixelRatio * width;
+        canvas.height = pixelRatio * height;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        context.scale(pixelRatio,pixelRatio);
+    }
 
     var Particle = function () {
         //random start position by angle
@@ -226,12 +223,11 @@
 
 
 
-    var add = 0;
     function loop() {
 
         var p = null;
 
-        context.clearRect(0, 0, aniDeploy.width, aniDeploy.height);
+        context.clearRect(0, 0, width, height);
 //        centerX += centerXVelo;
 //        if(centerX < width/2 - centerXOffset || centerX > width/2 + centerXOffset){
 //            centerXVelo = -centerXVelo;
@@ -322,7 +318,7 @@
 
 
         //
-//        aniDeploy.turnSpeed = Math.abs(aniDeploy.width/2 - aniDeploy.centerXOffset)
+//        aniDeploy.turnSpeed = Math.abs(width/2 - aniDeploy.centerXOffset)
 
         requestAnimationFrame(loop);
     }
@@ -348,7 +344,15 @@
         }
     });
 
-    //    loop();
+
+    var aniSphere = new TWEEN.Tween(aniDeploy);
+    aniSphere.to({centerX: aniDeploy.centerLeft}, 10000)
+            .repeat(Infinity)
+            .yoyo(true)
+            .delay(5000)
+            .easing(TWEEN.Easing.Sinusoidal.InOut)
+            .start();
+    autoPixelRatio();
 
     // for debugging
     var f1 = gui.addFolder('Global');
