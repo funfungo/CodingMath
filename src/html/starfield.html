@@ -5,14 +5,40 @@
     <title>Title</title>
     <script src="../js/util.js"></script>
     <style>
+        @keyframes sway {
+            50%{
+                transform: rotate(-20deg);
+            }
+            100%{
+                transform: rotate(20deg);
+            }
+        }
         *{
             padding: 0;
             margin: 0;
+        }
+        .ufo{
+            text-align: center;
+            width: 100%;
+            display: inline-block;
+            position: absolute;
+            top: 50%;
+            margin-top: -40px;
+            /*margin-left: -10px;*/
+            transform-origin: center center;
+            /*transform: translate3d(-20px, -20px,0);*/
+            animation: sway 2s linear infinite alternate;
+        }
+        .ufo img{
+            /*width: 12%;*/
         }
     </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
+<div class="ufo">
+    <img src="../img/starfield/ufo.png" width="12%">
+</div>
 <script>
     var canvas = document.getElementById("canvas");
     var ctx = canvas.getContext("2d");
@@ -27,13 +53,10 @@
     }
 
     Star.prototype.update = function () {
-        this.z = this.z - 20;
-        if(Math.abs(this.x/this.z)>1 || Math.abs(this.y/this.z)>1){
-            this.z = width/2;
-            this.y = Math.random()*height - height/2;
-            this.x = Math.random()*width - width/2;
-            this.preZ = this.z;
-        }
+        this.z = this.z - 2|>>OP***
+
+
+
     };
 
     Star.prototype.show = function () {
@@ -55,7 +78,7 @@
 //        ctx.fill();
     };
 
-    for (var i = 0; i < 200; i++){
+    for (var i = 0; i < 500; i++){
         var star = new Star();
         stars.push(star);
     }
