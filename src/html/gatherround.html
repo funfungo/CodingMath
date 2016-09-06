@@ -8,11 +8,21 @@
     <script src="../js/dat.gui.js"></script>
     <script src="../js/Tween.js"></script>
     <style>
+        @keyframes maskMove {
+            from {background-position:0 0;}
+            to {background-position:-10000px 5000px;}
+        }
+        @-webkit-keyframes maskMove {
+            from {background-position:0 0;}
+            to {background-position:-10000px 5000px;}
+        }
         * {
             margin: 0;
             padding: 0;
         }
-
+        html{
+            height: 100%;
+        }
         body {
             color: #ffffff;
             width: 100%;
@@ -36,9 +46,57 @@
         .content img {
             width: 100%;
         }
+        .starBg{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        @keyframes star {
+            0%{
+                background-image: url("../img/gatherround/star01.png");
+            }
+            33%{
+                background-image: url("../img/gatherround/star02.png");
+
+            }
+            66%{
+                background-image: url("../img/gatherround/star03.png");
+
+            }
+            100%{
+                background-image: url("../img/gatherround/star01.png");
+            }
+        }
+        .star{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #191919 url("../img/gatherround/star.png") no-repeat center;
+            background-size: cover;
+            animation: star 2s linear infinite;
+            opacity: 0.5;
+        }
+        .mask{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url("../img/gatherround/mask.png");
+            background-size: 34px 33px;
+            animation: maskMove 700s linear infinite;
+        }
+        canvas{
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
     </style>
 </head>
 <body>
+<div class="starBg">
+    <div class="star"></div>
+    <!--<div class="mask"></div>-->
+</div>
+
 <canvas id="canvas"></canvas>
 <div class="content"></div>
 <script>
@@ -68,7 +126,7 @@
         processTime: 0,
         //debugging
         sphereRad: 221,
-        greenDotSmallR: 2.7,
+        greenDotSmallR: 1.4,
         greenDotBigR: 3.1,
         turnSpeed: 0.0067,
         fLen: 641,
@@ -288,7 +346,8 @@
                     } else if (p.color == "gray2") {
                         context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGray2[0]) + "," + Math.floor(aniDeploy.colorGray2[1]) + "," + Math.floor(aniDeploy.colorGray2[2]) + "," + p.op + ")";
                     } else if (p.color == "green") {
-                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")";
+//                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")";
+                        context.fillStyle =   "rgba(255,255,255" + "," + p.op + ")";
                     }
                     context.beginPath();
                     context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);

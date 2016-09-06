@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../js/Tween.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<img src="http://tmtdemo.qq.com/20160822-jingying/dist/img/logo@2x.png">
+<canvas id="canvas" width="1000" height="600" style="width: 500px;height: 300px;"></canvas>
+<script>
+    var canvas = document.getElementById("canvas");
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.scale(2,2);
+    var img = new Image();
+    img.onload = function () {
+        var width = img.width;
+        var height = img.height;
+        ctx.drawImage(img,0,0,width/2,height/2);
+        ctx.fillRect(0,0,10,10)
+    };
+    img.src = "http://tmtdemo.qq.com/20160822-jingying/dist/img/logo@2x.png"
+</script>
+</body>
+</html>
