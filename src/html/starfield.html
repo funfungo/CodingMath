@@ -20,29 +20,42 @@
     var height = canvas.height = window.innerHeight;
     var stars = [];
     function Star() {
-        this.x = Math.random()*width - width/2;
+        this.z = width/2;
         this.y = Math.random()*height - height/2;
-        this.z = Math.random()*width/2;
+        this.x = Math.random()*width - width/2;
+        this.preZ = this.z;
     }
 
     Star.prototype.update = function () {
-        this.z = this.z - 0.5;
-        if(this.z<1){
-            this.z = Math.random()*width;
+        this.z = this.z - 20;
+        if(Math.abs(this.x/this.z)>1 || Math.abs(this.y/this.z)>1){
+            this.z = width/2;
             this.y = Math.random()*height - height/2;
             this.x = Math.random()*width - width/2;
+            this.preZ = this.z;
         }
     };
 
     Star.prototype.show = function () {
-        var x = util.map(this.x/this.z, -1, 1, -width/2, width/2);
-        var y = util.map(this.y/this.z, -1, 1, -width/2,width/2);
+        var x = util.map(this.x/this.z, -1, 1, -width, width);
+        var preX = util.map(this.x/this.preZ, -1, 1, -width, width);
+        var y = util.map(this.y/this.z, -1, 1, -height,height);
+        var preY = util.map(this.y/this.preZ, -1, 1, -height,height);
+        var r = util.map(this.z, 0, width, 8, 0);
+        this.preZ = this.z;
+
         ctx.beginPath();
-        ctx.arc(x,y,8,0,Math.PI*2);
-        ctx.fill();
+        ctx.moveTo(preX,preY);
+        ctx.lineTo(x,y);
+        ctx.closePath();
+        ctx.strokeStyle = "#fff";
+        ctx.stroke();
+        ctx.beginPath();
+//        ctx.arc(x,y,r,0,Math.PI*2);
+//        ctx.fill();
     };
 
-    for (var i = 0; i < 100; i++){
+    for (var i = 0; i < 200; i++){
         var star = new Star();
         stars.push(star);
     }
