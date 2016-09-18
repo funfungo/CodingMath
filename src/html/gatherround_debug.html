@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gatherround</title>
+    <script src="../js/vector3.js"></script>
+    <script src="../js/util.js"></script>
+    <script src="../js/dat.gui.js"></script>
+    <script src="../js/Tween.js"></script>
+    <style>
+        @keyframes maskMove {
+            from {background-position:0 0;}
+            to {background-position:-10000px 5000px;}
+        }
+        @-webkit-keyframes maskMove {
+            from {background-position:0 0;}
+            to {background-position:-10000px 5000px;}
+        }
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        html{
+            height: 100%;
+        }
+        body {
+            color: #ffffff;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #191919;
+            /*background: #212020 url(../img/gatherround/bg.png) center top;*/
+            text-align: center;
+        }
+
+        .content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 1100px;
+            background: url(../img/gatherround/bg.png) center top;
+            background-size: auto 100%;
+        }
+
+        .content img {
+            width: 100%;
+        }
+        .starBg{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        @keyframes star {
+            0%{
+                background-image: url("../img/gatherround/star01.png");
+            }
+            33%{
+                background-image: url("../img/gatherround/star02.png");
+
+            }
+            66%{
+                background-image: url("../img/gatherround/star03.png");
+
+            }
+            100%{
+                background-image: url("../img/gatherround/star01.png");
+            }
+        }
+        .star{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #191919 url("../img/gatherround/star.png") no-repeat center;
+            background-size: cover;
+            animation: star 2s linear infinite;
+            opacity: 0.5;
+        }
+        .mask{
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url("../img/gatherround/mask.png");
+            background-size: 34px 33px;
+            animation: maskMove 700s linear infinite;
+        }
+        canvas{
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="starBg">
+    <div class="star"></div>
+    <!--<div class="mask"></div>-->
+</div>
+
+<canvas id="canvas"></canvas>
+<div class="content"></div>
+<script>
+    (function () {
+        var gui = new dat.GUI();
+        var canvas = document.getElementById("canvas");
+        //offscreen canvas to improve performance
+        var offscreenCanvas = document.createElement("canvas");
+        var offscreenCtx = offscreenCanvas.getContext("2d");
+        var context = canvas.getContext("2d");
+        var pixelRatio = window.devicePixelRatio || 1;
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+
+        //use image as green blur dot
+        var dotImage = new Image();
+        dotImage.src = "http://wximg.qq.com/tmt/coding-math/dist/img/gatherround/dot1.png";
+        dotImage.onload = function () {
+            loop();
+        };
+
+        var particles = [];
+        //beginning add symbol (add a particle every 3 frames)
+        var add = 0;
+
+        //deploy parameters
+        var aniDeploy = {
+            centerXOffset: 0,
+            centerY: 485,
+            maxParticle: 400,
+            processTime: 0,
+            //dat debugging
+            sphereRad: 221,
+            greenDotSmallR: 1.4,
+            greenDotBigR: 3.1,
+            turnSpeed: 0.0067,
+            fLen: 641,
+            grayDotR: 1.5,
+            finalGreenPercent: 0.24,
+            greenDotBigPercent: 0.32,
+            colorGray1: [64, 64, 64],
+            colorGray2: [40, 40, 40],
+            colorGreen: [9, 187, 7]
+        };
+
+        aniDeploy.centerX = width / 2 + aniDeploy.centerXOffset;
+        aniDeploy.centerLeft = width / 2 - aniDeploy.centerXOffset;
+        // to mark the time of different
+        aniDeploy.flagTime = aniDeploy.maxParticle * 3;
+
+        function autoPixelRatio() {
+            canvas.width = pixelRatio * width;
+            canvas.height = pixelRatio * height;
+            canvas.style.width = width + "px";
+            canvas.style.height = height + "px";
+            context.scale(pixelRatio,pixelRatio);
+        }
+
+        var Particle = function () {
+            //random start position by angle
+            this.startPos = {
+                theta: Math.random() * Math.PI,
+                phi: 2 * Math.random() * Math.PI
+            };
+            //start postion out of sphere so the start radius range set between (2~2.5)*sphere radius
+            this.startLen = (2 + Math.random() * 0.5) * aniDeploy.sphereRad;
+            //count coordinate of start position
+            var x = this.startLen * Math.sin(this.startPos.theta) * Math.cos(this.startPos.phi);
+            var y = this.startLen * Math.sin(this.startPos.theta) * Math.sin(this.startPos.phi);
+            var z = this.startLen * Math.cos(this.startPos.theta);
+            //use vector to represent coordinate
+            this.nowPos = new Vector(x, y, z);
+
+            this.veloRate = 2 + Math.random() * 2;
+            this.velo = this.nowPos.unit().negative().multiply(this.veloRate);
+            this.accVelo = new Vector(0, 0, 0);
+            this.finalVelo = 0;
+            this.m = aniDeploy.fLen / (aniDeploy.fLen - this.nowPos.z);
+
+            //particle life span and age
+            //when particle's age equal to life ,it dies
+            this.life = 50 + Math.floor(Math.random() * 500);
+            this.age = 0;
+            //
+            this.turnAngle = 0;
+
+            //random walk time
+            //random walk make animation more nature
+            this.wanderTime = 300;
+            //default particle radius
+            this.radius = aniDeploy.grayDotR / 2 + (Math.random() * aniDeploy.grayDotR) / 2;
+            //project 3d coordinate to 2d
+            this.proj = {};
+            //hover event parameter setting
+            this.hover = false;
+            this.hoverVelo = new Vector(0, 0, 0);
+            this.hoverTime = 50;
+
+            //different color setting
+            var randomColor = Math.random();
+            //color
+            if (randomColor < (aniDeploy.processTime / aniDeploy.flagTime) && randomColor < aniDeploy.finalGreenPercent) {
+                if (Math.random() > aniDeploy.greenDotBigPercent) {
+//                this.color = "rgba("+Math.floor(colorGreen[0])+","+Math.floor(colorGreen[1])+","+Math.floor(colorGreen[2])+",";
+                    this.radius = aniDeploy.greenDotSmallR / 2;
+                    this.color = "green";
+                } else {
+                    this.img = dotImage;
+                    this.radius = aniDeploy.greenDotBigR / 2 + (Math.random() * aniDeploy.greenDotBigR) / 2;
+                }
+            } else {
+                if (Math.random() > 0.5) {
+                    this.color = "gray1";
+//                this.color = "rgba("+Math.floor(aniDeploy.colorGray1[0])+","+Math.floor(aniDeploy.colorGray1[1])+","+Math.floor(aniDeploy.colorGray1[2])+",";
+                } else {
+                    this.color = "gray2";
+//                this.color = "rgba("+Math.floor(colorGray2[0])+","+Math.floor(colorGray2[1])+","+Math.floor(colorGray2[2])+",";
+                }
+            }
+        };
+
+        Particle.prototype.update = function () {
+            this.nowPosUnit = this.nowPos.unit();
+
+            if (this.hover === true) {
+                var x = 0.5 * (Math.random() * 2 - 1);
+                var y = 0.5 * (Math.random() * 2 - 1);
+                var z = 0.05 + 0.02 * (Math.random());
+                this.accVelo = new Vector(x, y, z);
+                this.hoverVelo = this.hoverVelo.add(this.accVelo);
+                this.nowPos = this.nowPos.add(this.hoverVelo);
+                this.hoverTime--;
+                this.age++;
+                if (this.op > 0) {
+                    this.op = this.op - 0.01;
+                } else {
+                    this.op = 0;
+                }
+            }
+
+            else {
+                if (this.wanderTime > 0 && this.nowPos.length() > (aniDeploy.sphereRad * 1.2)) {
+                    this.wanderTime--;
+                    this.velo.x += 0.2 * (Math.random() * 2 - 1);
+                    this.velo.y += 0.2 * (Math.random() * 2 - 1);
+                    this.velo.z += 0.2 * (Math.random() * 2 - 1);
+                    this.nowPos = this.nowPos.add(this.velo);
+                    this.op = util.map(this.nowPos.length(), aniDeploy.sphereRad, this.startLen, 1, 0);
+                }
+
+                else if (this.nowPos.length() > aniDeploy.sphereRad) {
+                    if (this.finalPos === 0) {
+                        this.finalPos = this.nowPosUnit.multiply(aniDeploy.sphereRad);
+                    }
+                    if (this.finalVelo === 0) {
+                        this.finalVelo = this.nowPosUnit.negative().multiply(this.veloRate + 1);
+                    }
+                    this.nowPos = this.nowPos.add(this.finalVelo);
+                    this.op = util.map(this.nowPos.length(), aniDeploy.sphereRad, this.startLen, 1, 0);
+                }
+
+
+                else {
+                    this.finalPos = 0;
+                    this.finalVelo = 0;
+                    this.op = (this.life - this.age) / (this.life / 2);
+                    this.turnAngle = (this.turnAngle + aniDeploy.turnSpeed) % (Math.PI * 2);
+                    var cosAngle = Math.cos(aniDeploy.turnSpeed);
+                    var sinAngle = Math.sin(aniDeploy.turnSpeed);
+                    this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
+                    this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
+                    this.y = this.nowPos.y;
+                    this.nowPos = new Vector(this.x, this.y, this.z);
+                    this.age++;
+                }
+            }
+
+
+            this.m = aniDeploy.fLen / (aniDeploy.fLen - this.nowPos.z);
+            this.proj = {
+                x: this.nowPos.x * this.m + aniDeploy.centerX,
+                y: this.nowPos.y * this.m + aniDeploy.centerY,
+                r: this.radius * this.m * 2
+            }
+        };
+
+
+
+
+        function loop() {
+
+            var p = null;
+
+            context.clearRect(0, 0, width, height);
+//        centerX += centerXVelo;
+//        if(centerX < width/2 - centerXOffset || centerX > width/2 + centerXOffset){
+//            centerXVelo = -centerXVelo;
+//            aniDeploy.turnSpeed = -aniDeploy.turnSpeed;
+//        }
+
+            //hover indicator
+            if (hover) {
+                context.save();
+                context.globalAlpha = 0.5;
+                context.drawImage(dotImage, eventX - 30, eventY - 30, 40, 40);
+                context.restore();
+            }
+
+            //determine whether to add new particle
+            var pl = particles.length;
+            if (pl < aniDeploy.maxParticle) {
+                if (pl < 0.2 * aniDeploy.maxParticle) {
+                    add++;
+                    if (add === 3) {
+                        add = 0;
+                        p = new Particle();
+                        p.veloRate = 0.5;
+                    }
+                }
+                else if (pl < 0.7 * aniDeploy.maxParticle) {
+                    p = new Particle();
+                    p.veloRate = 1 + Math.random() * 1;
+                }
+                else {
+                    p = new Particle();
+                    p.veloRate = 0.5 + Math.random() * 0.5;
+
+                }
+                if (p !== null) {
+                    aniDeploy.processTime++;
+                    particles.push(p);
+                }
+            }
+
+            //particle status update
+            for (var i = 0; i < particles.length; i++) {
+                var p = particles[i];
+                if (p.age === p.life) {
+                    particles.splice(i, 1);
+                    var p = new Particle();
+                    p.veloRate = 0.5 + Math.random() * 0.5;
+                    particles.push(p);
+                    aniDeploy.processTime++;
+                }
+
+                p.update();
+
+                if (p.m > 0) {
+                    if (p.color !== undefined) {
+                        if (p.color == "gray1") {
+                            context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGray1[0]) + "," + Math.floor(aniDeploy.colorGray1[1]) + "," + Math.floor(aniDeploy.colorGray1[2]) + "," + p.op + ")";
+                        } else if (p.color == "gray2") {
+                            context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGray2[0]) + "," + Math.floor(aniDeploy.colorGray2[1]) + "," + Math.floor(aniDeploy.colorGray2[2]) + "," + p.op + ")";
+                        } else if (p.color == "green") {
+//                        context.fillStyle = "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")";
+                            context.fillStyle =   "rgba(255,255,255" + "," + p.op + ")";
+                        }
+                        context.beginPath();
+                        context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
+                        context.fill();
+                    } else {
+//                    context.save();
+//                    context.globalAlpha = p.op;
+//                    context.drawImage(p.img, p.proj.x, p.proj.y, p.proj.r, p.proj.r);
+//                    context.restore();
+                        context.beginPath();
+                        var gradient = context.createRadialGradient(p.proj.x, p.proj.y, 0, p.proj.x, p.proj.y, p.proj.r);
+                        gradient.addColorStop(0, "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + "," + p.op + ")");
+                        gradient.addColorStop(1, "rgba(" + Math.floor(aniDeploy.colorGreen[0]) + "," + Math.floor(aniDeploy.colorGreen[1]) + "," + Math.floor(aniDeploy.colorGreen[2]) + ",0)");
+                        context.save();
+                        context.globalAlpha = p.op;
+                        context.fillStyle = gradient;
+                        context.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
+                        context.fill();
+                        context.restore();
+                    }
+
+
+                }
+            }
+            TWEEN.update();
+
+
+
+            //
+//        aniDeploy.turnSpeed = Math.abs(width/2 - aniDeploy.centerXOffset)
+
+            requestAnimationFrame(loop);
+        }
+
+        var eventX, eventY;
+        var hover;
+
+        //hover event
+        document.addEventListener("mousemove", function (e) {
+            eventX = e.clientX;
+            eventY = e.clientY;
+            if (Math.abs(eventX - aniDeploy.centerX) < aniDeploy.sphereRad+10 && Math.abs(eventY - aniDeploy.centerY) < aniDeploy.sphereRad + 10) {
+                hover = true;
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    if (Math.abs(p.proj.x - eventX) < 25 && Math.abs(p.proj.y - eventY) < 25  && p.hover === false) {
+                        p.hover = true;
+                    } else {
+                    }
+                }
+            } else {
+                hover = false;
+            }
+        });
+
+
+        var aniSphere = new TWEEN.Tween(aniDeploy);
+        aniSphere.to({fLen: 200}, 10000)
+            .delay(5000)
+            .easing(TWEEN.Easing.Sinusoidal.InOut)
+            .start();
+        autoPixelRatio();
+
+        // for debugging
+        var f1 = gui.addFolder('Global');
+        var f2 = gui.addFolder('DotRadius');
+        var f3 = gui.addFolder('DotAmount');
+        var f4 = gui.addFolder('Color');
+
+        f1.add(aniDeploy, "fLen", 200, 1000);
+        f1.add(aniDeploy, "turnSpeed", 0.001, 0.01);
+        f1.add(aniDeploy, "sphereRad", 100, 300);
+        f1.add(aniDeploy, "centerX", 200, 1200);
+        f1.add(aniDeploy, "centerY", 0, 1000);
+
+
+        f2.add(aniDeploy, "greenDotSmallR", 0, 5);
+        f2.add(aniDeploy, "greenDotBigR", 0, 5);
+        f2.add(aniDeploy, "grayDotR", 0, 5);
+        f3.add(aniDeploy, "finalGreenPercent", 0, 1);
+        f3.add(aniDeploy, "greenDotBigPercent", 0, 1);
+        f4.addColor(aniDeploy, "colorGray1");
+        f4.addColor(aniDeploy, "colorGray2");
+        f4.addColor(aniDeploy, "colorGreen");
+        f1.open();
+        f2.open();
+        f3.open();
+        f4.open();
+    })();
+
+</script>
+</body>
+</html>
