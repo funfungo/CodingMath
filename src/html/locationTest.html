@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta id="viewport" name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"/>
+    <script src="../js/jquery-1.11.1.min.js"></script>
+</head>
+<body>
+<ul id="coords">
+
+</ul>
+<script>
+    var now = new Date();
+    var year = now.getYear();
+    var month = now.getMonth() + 1;
+    var date = now.getDate();
+    var hour = now.getHours();
+    var min = now.getMinutes();
+
+    var tmpl = "<li></li>";
+    var lng, lat, accuracy;
+    var maxDataLength = 30;
+
+    navigator.geolocation.getCurrentPosition(function (position) {
+        lat = position.coords.latitude;
+        lng = position.coords.longitude;
+        accuracy = position.coords.accuracy;
+        var key = month + "月" + date + "日" + " " + hour + ":" + min;
+        var value = "lat: " + lat + " lng: " + lng + " accuracy: " + accuracy;
+        var data = JSON.parse(localStorage.getItem("Position")) || [];
+        data.push({
+            key: key,
+            value: value
+        });
+        if(data.length > maxDataLength){
+            data.splice(0,1);
+        }
+        localStorage.setItem("Position",JSON.stringify(data));
+        var html = "";
+        for(var i = 0; i < data.length; i++){
+            html += "<li>";
+            html += data[i].key + ": " + data[i].value;
+            html += "</li>";
+        }
+        $("#coords").html(html);
+    });
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

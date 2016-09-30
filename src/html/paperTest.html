@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        html,body{
+            height: 100%;
+        }
+        canvas{
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script type="text/javascript" src="../js/paper-full.js"></script>
+    <!--<script type="text/paperscript" canvas="myCanvas">-->
+<!--function onFrame(event) {-->
+	<!--// the number of times the frame event was fired:-->
+	<!--console.log(event.count);-->
+
+	<!--// The total amount of time passed since-->
+	<!--// the first frame event in seconds:-->
+	<!--console.log(event.time);-->
+
+	<!--// The time passed in seconds since the last frame event:-->
+	<!--console.log(event.delta);-->
+<!--}-->
+    <!--</script>-->
+    <script type="text/javascript">
+        paper.install(window);
+
+        window.onload = function() {
+            paper.setup('myCanvas');
+
+            var raster = new Raster("pica");
+            raster.position = view.center;
+            raster.visible = false;
+            var gridSize = 10;
+
+            raster.on('load',function () {
+
+            });
+
+            raster.size = new Size(70,70);
+            for(var i = 0 ; i < raster.width; i++){
+                for(var j = 0 ; j < raster.height; j++){
+                    var color = raster.getPixel(i,j);
+
+                    var path = new Path.Circle({
+                        center: new Point(i, j).multiply(gridSize),
+                        radius: gridSize / 2
+                    });
+
+                    path.fillColor = color;
+                }
+            }
+
+            project.activeLayer.position = view.center;
+
+            view.draw();
+        }
+    </script>
+</head>
+<body>
+<img src="../img/avatar.png" id="pica" style="display: none;">
+<canvas id="myCanvas" resize></canvas>
+</body>
+</html>
