@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Spring</title>
-    <script src="../js/vector3.js"></script>
-    <script src="../js/util.js"></script>
-    <!--<script src="../js/particle.js"></script>-->
+    <title>Title</title>
+    <script src="../js/Tween.js"></script>
     <style>
         * {
             margin: 0;
@@ -13,109 +11,26 @@
         }
 
         body {
-            width: 100%;
-            height: 100%;
-            background: #000;
             overflow: hidden;
         }
     </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
+<img src="http://tmtdemo.qq.com/20160822-jingying/dist/img/logo@2x.png">
+<canvas id="canvas" width="1000" height="600" style="width: 500px;height: 300px;"></canvas>
 <script>
     var canvas = document.getElementById("canvas");
-    var context = canvas.getContext("2d");
-    var width = canvas.width = window.innerWidth;
-    var height = canvas.height = window.innerHeight;
-    context.fillStyle = "#fff";
-
-    var sphereRad = 130;
-    var fLen = 300;
-
-
-    var particles = [];
-    var sphereObject = [];
-    var turnSpeed = 0.01;
-
-    var Particle = function () {
-
-        this.distPos = {
-            theta: Math.random() * Math.PI,
-            phi: 2 * Math.random() * Math.PI
-        };
-
-        this.proj = {};
-        this.turnAngle = 0;
-        this.init();
+    var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#000";
+    ctx.scale(2,2);
+    var img = new Image();
+    img.onload = function () {
+        var width = img.width;
+        var height = img.height;
+        ctx.drawImage(img,0,0,width/2,height/2);
+        ctx.fillRect(0,0,10,10)
     };
-
-    Particle.prototype.init = function () {
-
-        this.distPos.x = sphereRad * Math.sin(this.distPos.theta) * Math.cos(this.distPos.phi);
-        this.distPos.y = sphereRad * Math.sin(this.distPos.theta) * Math.sin(this.distPos.phi);
-        this.distPos.z = sphereRad * Math.cos(this.distPos.theta);
-        this.distVec = new Vector(this.distPos.x, this.distPos.y, this.distPos.z);
-        this.unitVec = this.distVec.unit();
-
-
-        var startMult = 1+Math.random()*1;
-        this.startVec =this.distVec.multiply(startMult);
-        this.x = this.startVec.x;
-        this.y = this.startVec.y;
-        this.z = this.startVec.z;
-
-        this.velo = this.unitVec.negative().multiply(0.5+Math.random()*2);
-        this.m = fLen / (fLen - this.z);
-//        this.angle = {
-//            theta: this.distPos.theta * 180 / Math.PI,
-//            phi: this.distPos.phi * 180 / Math.PI
-//        }
-
-    };
-
-    Particle.prototype.update = function () {
-        this.nowPos = new Vector(this.x, this.y, this.z);
-        if (this.nowPos.length() > sphereRad) {
-            this.x = this.x + this.velo.x;
-            this.y = this.y + this.velo.y;
-            this.z = this.z + this.velo.z;
-        } else {
-            this.turnAngle += turnSpeed % (2 * Math.PI);
-            var cosAngle = Math.cos(turnSpeed);
-            var sinAngle = Math.sin(turnSpeed);
-            this.x = cosAngle * this.x + sinAngle * this.z;
-            this.z = -sinAngle * this.x + cosAngle * this.z;
-            this.y = this.distPos.y;
-        }
-
-//        this.proj.x = cosAngle * this.x + sinAngle*this.z;
-//        this.proj.z =  -sinAngle*this.x + cosAngle*this.z;
-//        this.proj.y = this.distPos.y;
-        this.m = fLen / (fLen - this.z);
-    };
-
-//    var p = new Particle();
-
-    for (var i = 0; i < 250; i++) {
-        var p = new Particle();
-        particles.push(p);
-    }
-
-    function loop() {
-        context.clearRect(0, 0, width, height);
-        for (var i = 0; i < 250; i++) {
-            var p = particles[i];
-            p.update();
-            var alpha = util.map(p.z, -sphereRad, sphereRad, 0.3, 1);
-            context.fillStyle = "rgba(70,255,140," + alpha + ")";
-            context.beginPath();
-//            context.arc(p.x + width / 2, height / 2 - p.y, 2.5 * p.m, 0, Math.PI * 2);
-            context.arc(p.x*p.m + width/2, height/2 - p.y*p.m, 2 * p.m, 0, Math.PI * 2);
-            context.fill();
-        }
-        requestAnimationFrame(loop);
-    }
-    loop();
+    img.src = "http://tmtdemo.qq.com/20160822-jingying/dist/img/logo@2x.png"
 </script>
 </body>
 </html>
