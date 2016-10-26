@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content=" initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no">
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        html{
+            height: 100%;
+        }
+        body{
+            height: 100%;
+            background-color: #333;
+        }
+        .content{
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url(../img/gatherround/mo-bg.png);
+            background-size: 100%;
+        }
+    </style>
+    <script src="../js/vector3.js"></script>
+    <script src="../js/util.js"></script>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div class="content"></div>
+<script>
+    var canvas = document.getElementById("canvas");
+    var offscreenCanvas = document.createElement("canvas");
+    var offscreenCtx = offscreenCanvas.getContext("2d");
+    var context = canvas.getContext("2d");
+    var pixelRatio = window.devicePixelRatio || 1;
+
+    var width = window.innerWidth;
+    var height = 300;
+    var particles = [];
+
+    var aniDeploy = {
+        centerY: 200,
+        centerZ: 300,
+        maxParticle: 400,
+        processTime: 0,
+        //dat debugging
+        sphereRad: 300,
+        greenDotSmallR: 1.4,
+        greenDotBigR: 5,
+        turnSpeed: 0.003,
+        fLen: 500,
+        grayDotR: 2,
+        finalGreenPercent: 0.4,
+        greenDotBigPercent: 0.32,
+        colorGray1: [90, 90, 90],
+        colorGray2: [64, 64, 64],
+        colorGray3: [40, 40, 40],
+        colorGray4: [40, 40, 40],
+        colorWhite1: [255, 255, 255],
+        colorWhite2: [64, 64, 64]
+    };
+
+    function autoPixelRatio() {
+        width = window.innerWidth;
+        height = 300;
+        aniDeploy.centerX =  width/2;
+        offscreenCanvas.width = canvas.width = pixelRatio * width;
+        offscreenCanvas.height = canvas.height = pixelRatio * height;
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
+        offscreenCtx.scale(pixelRatio, pixelRatio);
+    }
+
+    var Particle = function () {
+        this.startPos = {
+            theta: Math.random() * Math.PI,
+            phi: 2 * Math.random() * Math.PI
+        };
+        this.startLen = aniDeploy.sphereRad;
+        var x = this.startLen * Math.sin(this.startPos.theta) * Math.cos(this.startPos.phi);
+        var y = this.startLen * Math.sin(this.startPos.theta) * Math.sin(this.startPos.phi);
+        var z = this.startLen * Math.cos(this.startPos.theta);
+
+        this.nowPos = new Vector(x, y, z);
+        this.turnAngle = 0;
+        this.op = 1;
+        this.radius = aniDeploy.grayDotR / 2 + (Math.random() * aniDeploy.grayDotR) / 2;
+        var randomColor = Math.random();
+        if(randomColor < aniDeploy.finalGreenPercent){
+            if(Math.random() > aniDeploy.greenDotBigPercent){
+                this.color = "rgba(" + Math.floor(aniDeploy.colorWhite2[0]) + "," + Math.floor(aniDeploy.colorWhite2[1]) + "," + Math.floor(aniDeploy.colorWhite2[2]) + ",";
+                this.radius = aniDeploy.greenDotSmallR / 2;
+            }else {
+                this.img = dotImage;
+                this.radius = aniDeploy.greenDotBigR / 2 + (Math.random() * aniDeploy.greenDotBigR) / 2;
+            }
+        }else{
+            if(Math.random() > 0.5){
+                this.color = "rgba(" + Math.floor(aniDeploy.colorGray1[0]) + "," + Math.floor(aniDeploy.colorGray1[1]) + "," + Math.floor(aniDeploy.colorGray1[2]) + ",";
+            }else {
+                this.color = "rgba(" + Math.floor(aniDeploy.colorGray4[0]) + "," + Math.floor(aniDeploy.colorGray4[1]) + "," + Math.floor(aniDeploy.colorGray4[2]) + ",";
+            }
+        }
+    };
+
+    Particle.prototype.update = function () {
+        this.turnAngle = (this.turnAngle + aniDeploy.turnSpeed) % (Math.PI * 2);
+        var cosAngle = Math.cos(aniDeploy.turnSpeed);
+        var sinAngle = Math.sin(aniDeploy.turnSpeed);
+        this.x = cosAngle * this.nowPos.x + sinAngle * this.nowPos.z;
+        this.z = -sinAngle * this.nowPos.x + cosAngle * this.nowPos.z;
+        this.y = this.nowPos.y;
+        this.nowPos = new Vector(this.x, this.y, this.z);
+
+        this.m = aniDeploy.fLen / (aniDeploy.fLen - this.nowPos.z - aniDeploy.centerZ);
+        this.proj = {
+            x: this.nowPos.x * this.m + aniDeploy.centerX,
+            y: this.nowPos.y * this.m + aniDeploy.centerY,
+            r: this.radius * this.m * 2
+        }
+    };
+
+    Particle.prototype.draw = function () {
+
+    };
+
+
+    function loop() {
+        offscreenCtx.clearRect(0,0,width,height);
+        context.clearRect(0, 0, width*pixelRatio, height*pixelRatio);
+        for(var i = 0; i < particles.length; i++){
+            var p = particles[i];
+            p.update();
+            if (p.m > 0) {
+                if (p.color !== undefined) {
+                    offscreenCtx.fillStyle = p.color + p.op + ")";
+                    offscreenCtx.beginPath();
+                    offscreenCtx.arc(p.proj.x, p.proj.y, p.proj.r, 0, Math.PI * 2);
+                    offscreenCtx.fill();
+                } else {
+                    offscreenCtx.save();
+                    offscreenCtx.globalAlpha = p.op;
+                    offscreenCtx.drawImage(p.img, p.proj.x, p.proj.y, p.proj.r, p.proj.r);
+                    offscreenCtx.restore();
+                }
+
+
+            }
+        }
+        context.drawImage(offscreenCanvas,0,0);
+        requestAnimationFrame(loop);
+    }
+    autoPixelRatio();
+    var dotImage = new Image();
+    dotImage.onload = function () {
+        for(var i = 0; i < 200; i++){
+            var p = new Particle(true);
+            particles.push(p);
+        }
+
+        loop();
+    };
+    dotImage.src = "http://wximg.qq.com/tmt/coding-math/dist/img/gatherround/dot1.png";
+
+</script>
+</body>
+</html>
