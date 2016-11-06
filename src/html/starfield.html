@@ -46,15 +46,20 @@
     var height = canvas.height = window.innerHeight;
     var stars = [];
     function Star() {
-        this.z = width/2;
+        this.z = Math.random() * width/2;
         this.y = Math.random()*height - height/2;
         this.x = Math.random()*width - width/2;
         this.preZ = this.z;
     }
 
     Star.prototype.update = function () {
-        this.z = this.z - 2|>>OP***
-
+        this.z = this.z - 20;
+        if(this.z < 1){
+            this.z = Math.random() * width/2;
+            this.y = Math.random()*height - height/2;
+            this.x = Math.random()*width - width/2;
+            this.preZ = this.z;
+        }
 
 
     };
@@ -78,7 +83,7 @@
 //        ctx.fill();
     };
 
-    for (var i = 0; i < 500; i++){
+    for (var i = 0; i < 1000; i++){
         var star = new Star();
         stars.push(star);
     }
